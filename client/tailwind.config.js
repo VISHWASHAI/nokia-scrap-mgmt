@@ -21,11 +21,6 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
-      boxShadow: {
-        card: '0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px -1px rgba(0,0,0,0.04)',
-        'card-hover': '0 4px 12px 0 rgba(0,0,0,0.10)',
-        nokia: '0 4px 24px 0 rgba(0,80,255,0.15)',
-      },
     },
   },
   plugins: [],

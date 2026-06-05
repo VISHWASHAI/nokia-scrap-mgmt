@@ -5,8 +5,8 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-card-hover px-4 py-3 text-sm">
-      <p className="font-semibold text-gray-800 mb-2 truncate max-w-[200px]">{label}</p>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-md px-4 py-3 text-sm">
+      <p className="font-semibold text-gray-800 mb-2">{label}</p>
       {payload.map(p => (
         <div key={p.name} className="flex items-center gap-2 text-xs">
           <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: p.fill }} />
@@ -33,38 +33,42 @@ export default function WasteBarChart({ data = [], loading }) {
     </div>
   );
 
-  const formatted = data.map(d => ({
-    ...d,
-    category: d.category.length > 22 ? d.category.slice(0, 20) + '…' : d.category,
-  }));
+  // Dynamic height: 52px per category row, min 300
+  const rowHeight = 52;
+  const chartHeight = Math.max(300, data.length * rowHeight);
 
   return (
-    <ResponsiveContainer width="100%" height={288}>
-      <BarChart data={formatted} margin={{ top: 4, right: 8, left: 0, bottom: 64 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+    <ResponsiveContainer width="100%" height={chartHeight}>
+      <BarChart
+        data={data}
+        layout="vertical"
+        margin={{ top: 4, right: 48, left: 8, bottom: 4 }}
+        barCategoryGap="30%"
+        barGap={3}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
         <XAxis
-          dataKey="category"
-          tick={{ fontSize: 10, fill: '#6B7A99' }}
-          angle={-40}
-          textAnchor="end"
-          interval={0}
+          type="number"
+          unit=" kg"
+          tick={{ fontSize: 11, fill: '#6B7A99' }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: '#6B7A99' }}
-          unit=" kg"
-          width={64}
+          type="category"
+          dataKey="category"
+          width={160}
+          tick={{ fontSize: 11, fill: '#374151' }}
           axisLine={false}
           tickLine={false}
         />
-        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#F8FAFF' }} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: '#F0F4FF' }} />
         <Legend
           wrapperStyle={{ paddingTop: 16, fontSize: 12 }}
           formatter={(v) => <span style={{ color: '#374151', fontWeight: 500 }}>{v}</span>}
         />
-        <Bar dataKey="BAT" name="BAT Production" fill="#0050FF" radius={[4, 4, 0, 0]} maxBarSize={32} />
-        <Bar dataKey="SOFT" name="Soft Production" fill="#00CC44" radius={[4, 4, 0, 0]} maxBarSize={32} />
+        <Bar dataKey="BAT"  name="BAT Production"  fill="#0050FF" radius={[0, 4, 4, 0]} maxBarSize={18} />
+        <Bar dataKey="SOFT" name="Soft Production"  fill="#00CC44" radius={[0, 4, 4, 0]} maxBarSize={18} />
       </BarChart>
     </ResponsiveContainer>
   );

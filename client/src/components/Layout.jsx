@@ -3,11 +3,45 @@ import Sidebar from './Sidebar.jsx';
 
 export default function Layout({ children }) {
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+    <div
+      className="flex flex-col h-screen overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #001240 0%, #002855 40%, #003D4D 70%, #00311E 100%)' }}
+    >
       <Navbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 relative">
+          {/* Decorative glow blobs over the dark Nokia gradient */}
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+            {/* Nokia blue glow — top left */}
+            <div style={{
+              position: 'absolute', top: '-8%', left: '-6%',
+              width: '600px', height: '600px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(0,80,255,0.22) 0%, transparent 65%)',
+              filter: 'blur(50px)',
+            }} />
+            {/* Nokia green glow — bottom right */}
+            <div style={{
+              position: 'absolute', bottom: '-10%', right: '-5%',
+              width: '700px', height: '700px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(0,204,68,0.18) 0%, transparent 65%)',
+              filter: 'blur(60px)',
+            }} />
+            {/* Cyan accent — center */}
+            <div style={{
+              position: 'absolute', top: '35%', left: '38%',
+              width: '500px', height: '500px', borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(0,170,204,0.10) 0%, transparent 65%)',
+              filter: 'blur(70px)',
+            }} />
+            {/* Dot-grid overlay */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)',
+              backgroundSize: '28px 28px',
+            }} />
+          </div>
+
           {children}
         </main>
       </div>

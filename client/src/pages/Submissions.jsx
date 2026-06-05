@@ -26,8 +26,8 @@ export default function Submissions() {
     <Layout>
       <div className="space-y-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">My Submissions</h1>
-          <p className="text-sm text-gray-500">Declarations you've submitted.</p>
+          <h1 className="page-title">My Submissions</h1>
+          <p className="page-subtitle">Declarations you've submitted.</p>
         </div>
 
         {/* Filters */}

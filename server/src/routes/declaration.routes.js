@@ -5,15 +5,14 @@ import { requireMinRole } from '../middleware/rbac.middleware.js';
 import { createDeclarationSchema } from '../schemas/declaration.schema.js';
 import {
   createDeclaration,
+  updateDeclaration,
   submitDeclaration,
   approveDeclaration,
   getDeclarations,
   getDeclarationById,
 } from '../services/declaration.service.js';
 import { generateReport } from '../services/excel.service.js';
-import { uploadToOneDrive } from '../services/graph.upload.js';
 import { ok } from '../utils/response.js';
-import dayjs from 'dayjs';
 
 const router = Router();
 router.use(authenticate);
@@ -34,14 +33,15 @@ router.get('/', async (req, res, next) => {
 
 router.get('/export/excel', requireMinRole('ZONE_MANAGER'), async (req, res, next) => {
   try {
-    const dateFrom = req.query.date_from || dayjs().format('YYYY-MM-DD');
-    const dateTo = req.query.date_to || dayjs().format('YYYY-MM-DD');
-    const buffer = await generateReport(dateFrom, dateTo);
-    const filename = `Nokia_Scrap_Report_${dayjs().format('YYYYMMDD')}.xlsx`;
+    // If date range provided, scope to that range; otherwise export all historical data
+    const dateFrom = req.query.date_from || null;
+    const dateTo   = req.query.date_to   || null;
+    const buffer   = await generateReport(dateFrom, dateTo);
+    const filename = 'Nokia_Scrap_Report.xlsx';
 
-    // Log manual download
-    const { uploadToOneDrive: upload } = await import('../services/graph.upload.js');
-    upload(buffer, filename, null, 'MANUAL_DOWNLOAD').catch(() => {});
+    // Mirror to OneDrive (overwrites same file)
+    const { uploadToOneDrive } = await import('../services/graph.upload.js');
+    uploadToOneDrive(buffer, filename, null, 'MANUAL_DOWNLOAD').catch(() => {});
 
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -53,6 +53,13 @@ router.get('/:id', async (req, res, next) => {
   try {
     const decl = await getDeclarationById(req.params.id, req.user);
     ok(res, decl);
+  } catch (err) { next(err); }
+});
+
+router.patch('/:id', validate(createDeclarationSchema), async (req, res, next) => {
+  try {
+    const updated = await updateDeclaration(req.params.id, req.body, req.user);
+    ok(res, updated);
   } catch (err) { next(err); }
 });
 

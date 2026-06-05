@@ -61,7 +61,7 @@ export default function Login() {
             <img src="/nokia-logo.svg" alt="Nokia" className="h-10 mx-auto" />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-card border border-gray-200 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
             <div className="mb-7">
               <h2 className="text-xl font-bold text-gray-900">Welcome back</h2>
               <p className="text-sm text-nokia-muted mt-1">Sign in with your employee credentials</p>

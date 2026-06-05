@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { createDeclaration, submitDeclaration } from '../services/declarations.js';
+import { createDeclaration, updateDeclaration, submitDeclaration, getDeclaration } from '../services/declarations.js';
 import {
   GENERAL_WASTE_CATEGORIES,
   HAZARDOUS_CATEGORIES,
@@ -20,9 +20,214 @@ function buildDefaultRows(categories, waste_type) {
   return categories.map(cat => ({ waste_type, category: cat, pallet_qty: '', weight_kg: '', remarks: '' }));
 }
 
+// Defined at module scope so React never remounts it on parent re-renders
+const PANEL_ACCENT = {
+  general:   { bar: '#0050FF', light: '#EEF3FF', badge: 'bg-blue-100 text-blue-700',   icon: '♻️' },
+  hazardous: { bar: '#F59E0B', light: '#FFFBEB', badge: 'bg-amber-100 text-amber-700', icon: '⚠️' },
+  ewaste:    { bar: '#10B981', light: '#ECFDF5', badge: 'bg-green-100 text-green-700',  icon: '🖥️' },
+};
+
+function WasteTable({ rows, setRows, title, panel, isOpen, onToggle }) {
+  const [search, setSearch] = useState('');
+  const filledRows   = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0);
+  const totalKg      = filledRows.reduce((s, r) => s + Number(r.weight_kg), 0);
+  const accent       = PANEL_ACCENT[panel] || PANEL_ACCENT.general;
+  const query        = search.trim().toLowerCase();
+  const visibleRows  = query
+    ? rows.map((r, i) => ({ ...r, _orig: i })).filter(r => r.category.toLowerCase().includes(query))
+    : rows.map((r, i) => ({ ...r, _orig: i }));
+
+  function updateRow(idx, field, value) {
+    setRows(prev => {
+      const next = [...prev];
+      next[idx] = { ...next[idx], [field]: value };
+      return next;
+    });
+  }
+
+  return (
+    <div className="rounded-xl overflow-hidden bg-white shadow-sm" style={{ border: `1.5px solid ${accent.bar}33` }}>
+      {/* Panel header */}
+      <button
+        type="button"
+        onClick={() => onToggle(panel)}
+        className="w-full flex items-center justify-between px-5 py-3.5 transition-colors hover:opacity-90"
+        style={{ background: accent.light, borderBottom: isOpen ? `1.5px solid ${accent.bar}22` : 'none' }}
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-lg">{accent.icon}</span>
+          <span className="font-semibold text-sm text-gray-800">{title}</span>
+          {filledRows.length > 0 && (
+            <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${accent.badge}`}>
+              {filledRows.length} item{filledRows.length > 1 ? 's' : ''} · {totalKg.toFixed(2)} kg
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400 font-medium">{isOpen ? 'Collapse ▲' : 'Expand ▼'}</span>
+        </div>
+      </button>
+
+      {isOpen && (
+        <>
+        {/* Search bar */}
+        <div className="px-4 py-3 border-b border-gray-100" style={{ background: accent.light }}>
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: accent.bar }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Search in ${title}…`}
+              className="w-full pl-9 pr-9 py-2 text-sm rounded-lg border bg-white outline-none transition-all"
+              style={{ borderColor: search ? accent.bar : '#E5E7EB', boxShadow: search ? `0 0 0 3px ${accent.bar}20` : 'none' }}
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+              >×</button>
+            )}
+          </div>
+          {query && (
+            <p className="text-xs mt-1.5" style={{ color: accent.bar }}>
+              {visibleRows.length} of {rows.length} categories match
+              {filledRows.filter(r => r.category.toLowerCase().includes(query)).length > 0 &&
+                ` · ${filledRows.filter(r => r.category.toLowerCase().includes(query)).length} with data`}
+            </p>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            {/* Column headers */}
+            <thead>
+              <tr style={{ background: `${accent.bar}12` }}>
+                <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-500 w-80">#  Category</th>
+                <th className="px-3 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-gray-500 w-32">Pallet Qty</th>
+                <th className="px-3 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-gray-500 w-32">Weight (kg)</th>
+                <th className="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Remarks</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {visibleRows.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-10 text-center">
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+                      </svg>
+                      <p className="text-sm font-medium">No categories match "<span className="font-semibold">{search}</span>"</p>
+                      <button type="button" onClick={() => setSearch('')} className="text-xs underline" style={{ color: accent.bar }}>Clear search</button>
+                    </div>
+                  </td>
+                </tr>
+              ) : visibleRows.map((row, displayIdx) => {
+                const i         = row._orig;
+                const hasWeight = row.weight_kg !== '' && Number(row.weight_kg) > 0;
+
+                // Highlight matched text in category name
+                const catName = row.category;
+                const matchIdx = query ? catName.toLowerCase().indexOf(query) : -1;
+                const highlighted = matchIdx >= 0
+                  ? <>{catName.slice(0, matchIdx)}<mark style={{ background: `${accent.bar}30`, color: accent.bar, borderRadius: 2 }}>{catName.slice(matchIdx, matchIdx + query.length)}</mark>{catName.slice(matchIdx + query.length)}</>
+                  : catName;
+
+                return (
+                  <tr
+                    key={row.category}
+                    className="transition-colors"
+                    style={{ background: hasWeight ? `${accent.bar}08` : displayIdx % 2 === 0 ? '#ffffff' : '#f9fafb' }}
+                  >
+                    {/* Category */}
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs text-gray-400 font-mono w-5 text-right flex-shrink-0">{i + 1}</span>
+                        <span className="text-sm font-medium" style={{ color: hasWeight ? accent.bar : '#374151' }}>
+                          {highlighted}
+                        </span>
+                        {hasWeight && (
+                          <span className="text-xs font-semibold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: `${accent.bar}18`, color: accent.bar }}>✓</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Pallet Qty */}
+                    <td className="px-3 py-2 text-center">
+                      <input
+                        type="number" min="0" step="1"
+                        className="w-24 text-center border rounded-lg px-2 py-1.5 text-sm font-medium transition-all outline-none"
+                        style={{ borderColor: row.pallet_qty !== '' ? accent.bar : '#E5E7EB', background: row.pallet_qty !== '' ? `${accent.bar}08` : '#fff', color: '#111827' }}
+                        placeholder="0"
+                        value={row.pallet_qty}
+                        onChange={e => updateRow(i, 'pallet_qty', e.target.value)}
+                        onFocus={e => { e.target.style.boxShadow = `0 0 0 3px ${accent.bar}25`; e.target.style.borderColor = accent.bar; }}
+                        onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = row.pallet_qty !== '' ? accent.bar : '#E5E7EB'; }}
+                      />
+                    </td>
+
+                    {/* Weight */}
+                    <td className="px-3 py-2 text-center">
+                      <input
+                        type="number" min="0" step="0.001"
+                        className="w-24 text-center border rounded-lg px-2 py-1.5 text-sm font-bold transition-all outline-none"
+                        style={{ borderColor: hasWeight ? accent.bar : '#E5E7EB', background: hasWeight ? `${accent.bar}12` : '#fff', color: hasWeight ? accent.bar : '#111827' }}
+                        placeholder="0.000"
+                        value={row.weight_kg}
+                        onChange={e => updateRow(i, 'weight_kg', e.target.value)}
+                        onFocus={e => { e.target.style.boxShadow = `0 0 0 3px ${accent.bar}25`; e.target.style.borderColor = accent.bar; }}
+                        onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = hasWeight ? accent.bar : '#E5E7EB'; }}
+                      />
+                    </td>
+
+                    {/* Remarks */}
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        className="w-full border rounded-lg px-3 py-1.5 text-sm transition-all outline-none"
+                        style={{ borderColor: row.remarks ? '#D1D5DB' : '#E5E7EB', background: '#fff', color: '#374151' }}
+                        placeholder="Optional remarks…"
+                        value={row.remarks}
+                        onChange={e => updateRow(i, 'remarks', e.target.value)}
+                        onFocus={e => { e.target.style.boxShadow = `0 0 0 3px ${accent.bar}25`; e.target.style.borderColor = accent.bar; }}
+                        onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = row.remarks ? '#D1D5DB' : '#E5E7EB'; }}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+
+            {/* Footer total */}
+            {filledRows.length > 0 && (
+              <tfoot>
+                <tr style={{ background: `${accent.bar}10`, borderTop: `2px solid ${accent.bar}30` }}>
+                  <td className="px-4 py-2.5 text-xs font-bold text-gray-600" colSpan={2}>
+                    {filledRows.length} of {rows.length} categories filled
+                  </td>
+                  <td className="px-3 py-2.5 text-center text-sm font-bold" style={{ color: accent.bar }}>
+                    {totalKg.toFixed(3)} kg
+                  </td>
+                  <td />
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function DeclarationForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams(); // present when editing an existing draft
+  const isEdit = Boolean(id);
 
   const [header, setHeader] = useState({
     date: today(),
@@ -41,15 +246,57 @@ export default function DeclarationForm() {
   const [openPanels, setOpenPanels] = useState({ general: true, hazardous: false, ewaste: false });
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(isEdit);
   const [error, setError] = useState('');
 
-  const togglePanel = (panel) => setOpenPanels(p => ({ ...p, [panel]: !p[panel] }));
+  // Pre-fill form when editing an existing draft
+  useEffect(() => {
+    if (!isEdit) return;
+    setLoadingDraft(true);
+    getDeclaration(id)
+      .then(decl => {
+        if (decl.status !== 'DRAFT') {
+          navigate(`/declaration/${id}`);
+          return;
+        }
+        setHeader({
+          date: decl.date?.slice(0, 10) ?? today(),
+          shift: decl.shift,
+          time: decl.time,
+          zone: decl.zone,
+          production_function: decl.production_function,
+          description: decl.description || '',
+          reference_no: decl.reference_no || '',
+        });
 
-  function updateRow(rows, setRows, idx, field, value) {
-    const next = [...rows];
-    next[idx] = { ...next[idx], [field]: value };
-    setRows(next);
-  }
+        // Merge saved line items back into the full category rows
+        function mergeRows(categories, waste_type) {
+          return categories.map(cat => {
+            const saved = decl.line_items?.find(li => li.waste_type === waste_type && li.category === cat);
+            return {
+              waste_type,
+              category: cat,
+              pallet_qty: saved?.pallet_qty != null ? String(saved.pallet_qty) : '',
+              weight_kg:  saved?.weight_kg  != null ? String(saved.weight_kg)  : '',
+              remarks:    saved?.remarks    ?? '',
+            };
+          });
+        }
+        setGeneralRows(mergeRows(GENERAL_WASTE_CATEGORIES, 'GENERAL'));
+        setHazardousRows(mergeRows(HAZARDOUS_CATEGORIES, 'HAZARDOUS'));
+        setEwasteRows(mergeRows(EWASTE_CATEGORIES, 'EWASTE'));
+
+        // Auto-expand panels that have data
+        const hasGeneral   = decl.line_items?.some(li => li.waste_type === 'GENERAL'   && Number(li.weight_kg) > 0);
+        const hasHazardous = decl.line_items?.some(li => li.waste_type === 'HAZARDOUS' && Number(li.weight_kg) > 0);
+        const hasEwaste    = decl.line_items?.some(li => li.waste_type === 'EWASTE'    && Number(li.weight_kg) > 0);
+        setOpenPanels({ general: hasGeneral || true, hazardous: hasHazardous, ewaste: hasEwaste });
+      })
+      .catch(() => setError('Failed to load draft. Please go back and try again.'))
+      .finally(() => setLoadingDraft(false));
+  }, [id, isEdit, navigate]);
+
+  const togglePanel = (panel) => setOpenPanels(p => ({ ...p, [panel]: !p[panel] }));
 
   function collectLineItems() {
     return [...generalRows, ...hazardousRows, ...ewasteRows]
@@ -69,7 +316,9 @@ export default function DeclarationForm() {
     if (!line_items.length) { setError('Enter weight in at least one row.'); return; }
     setSaving(true);
     try {
-      const decl = await createDeclaration({ ...header, line_items });
+      const decl = isEdit
+        ? await updateDeclaration(id, { ...header, line_items })
+        : await createDeclaration({ ...header, line_items });
       navigate(`/declaration/${decl.id}`);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Save failed');
@@ -82,7 +331,9 @@ export default function DeclarationForm() {
     if (!line_items.length) { setError('Enter weight in at least one row before submitting.'); return; }
     setSubmitting(true);
     try {
-      const decl = await createDeclaration({ ...header, line_items });
+      const decl = isEdit
+        ? await updateDeclaration(id, { ...header, line_items })
+        : await createDeclaration({ ...header, line_items });
       await submitDeclaration(decl.id);
       navigate(`/declaration/${decl.id}`);
     } catch (err) {
@@ -90,79 +341,34 @@ export default function DeclarationForm() {
     } finally { setSubmitting(false); }
   }
 
-  function WasteTable({ rows, setRows, title, panel }) {
-    const hasData = rows.some(r => r.weight_kg !== '' && Number(r.weight_kg) > 0);
-
-    return (
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <button
-          type="button"
-          onClick={() => togglePanel(panel)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm text-gray-900">{title}</span>
-            {hasData && <span className="bg-nokia-blue text-white text-xs px-2 py-0.5 rounded-full">Has data</span>}
-          </div>
-          <span className="text-gray-400 text-xs">{openPanels[panel] ? '▲ Collapse' : '▼ Expand'}</span>
-        </button>
-
-        {openPanels[panel] && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 w-80">Category</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 w-28">Pallet Qty</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600 w-28">Weight (kg)</th>
-                  <th className="px-3 py-2 text-left text-xs font-semibold text-gray-600">Remarks</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, i) => (
-                  <tr key={row.category} className={i % 2 === 1 ? 'bg-gray-50/50' : ''}>
-                    <td className="px-3 py-2 text-xs text-gray-700">{row.category}</td>
-                    <td className="px-3 py-1">
-                      <input
-                        type="number" min="0" step="0.001"
-                        className="w-24 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-nokia-blue"
-                        value={row.pallet_qty}
-                        onChange={e => updateRow(rows, setRows, i, 'pallet_qty', e.target.value)}
-                      />
-                    </td>
-                    <td className="px-3 py-1">
-                      <input
-                        type="number" min="0" step="0.001"
-                        className="w-24 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-nokia-blue"
-                        value={row.weight_kg}
-                        onChange={e => updateRow(rows, setRows, i, 'weight_kg', e.target.value)}
-                      />
-                    </td>
-                    <td className="px-3 py-1">
-                      <input
-                        type="text"
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-nokia-blue"
-                        placeholder="Optional remarks"
-                        value={row.remarks}
-                        onChange={e => updateRow(rows, setRows, i, 'remarks', e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+  if (loadingDraft) return (
+    <Layout>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#0050FF] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500">Loading draft…</p>
+        </div>
       </div>
-    );
-  }
+    </Layout>
+  );
 
   return (
     <Layout>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">New Scrap Declaration</h1>
-          <p className="text-sm text-gray-500">Fill in all relevant waste categories and submit for approval.</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h1 className="page-title">
+              {isEdit ? 'Edit Draft Declaration' : 'New Scrap Declaration'}
+            </h1>
+            <p className="page-subtitle">
+              {isEdit ? 'Update the draft and save or submit for approval.' : 'Fill in all relevant waste categories and submit for approval.'}
+            </p>
+          </div>
+          {isEdit && (
+            <button onClick={() => navigate(`/declaration/${id}`)} className="btn-ghost ml-auto text-xs">
+              ← Back to Detail
+            </button>
+          )}
         </div>
 
         {error && (
@@ -213,9 +419,21 @@ export default function DeclarationForm() {
         </div>
 
         {/* Line item tables */}
-        <WasteTable rows={generalRows} setRows={setGeneralRows} title="General Waste" panel="general" />
-        <WasteTable rows={hazardousRows} setRows={setHazardousRows} title="Hazardous Waste" panel="hazardous" />
-        <WasteTable rows={ewasteRows} setRows={setEwasteRows} title="E-Waste" panel="ewaste" />
+        <WasteTable
+          rows={generalRows} setRows={setGeneralRows}
+          title="General Waste" panel="general"
+          isOpen={openPanels.general} onToggle={togglePanel}
+        />
+        <WasteTable
+          rows={hazardousRows} setRows={setHazardousRows}
+          title="Hazardous Waste" panel="hazardous"
+          isOpen={openPanels.hazardous} onToggle={togglePanel}
+        />
+        <WasteTable
+          rows={ewasteRows} setRows={setEwasteRows}
+          title="E-Waste" panel="ewaste"
+          isOpen={openPanels.ewaste} onToggle={togglePanel}
+        />
 
         {/* Approval chain preview */}
         <div className="card">
@@ -233,7 +451,7 @@ export default function DeclarationForm() {
         {/* Action buttons */}
         <div className="flex gap-3 justify-end">
           <button onClick={handleSave} disabled={saving || submitting} className="btn-secondary">
-            {saving ? 'Saving…' : 'Save as Draft'}
+            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save as Draft'}
           </button>
           <button onClick={handleSubmit} disabled={saving || submitting} className="btn-primary">
             {submitting ? 'Submitting…' : 'Submit for Approval'}

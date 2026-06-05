@@ -25,11 +25,11 @@ const STATUS_FLOW = {
 };
 
 const APPROVER_ROLE_FOR_STATUS = {
-  SUBMITTED: ['ZONE_MANAGER', 'DEPT_HEAD', 'FACILITY_MANAGER', 'ADMIN'],
-  ZONE_APPROVED: ['DEPT_HEAD', 'FACILITY_MANAGER', 'ADMIN'],
-  DEPT_APPROVED: ['FACILITY_MANAGER', 'ADMIN'],
-  IREP_AUTHORIZED: ['FACILITY_MANAGER', 'ADMIN'],
-  SECURITY_AUTHORIZED: ['FACILITY_MANAGER', 'ADMIN'],
+  SUBMITTED:          ['ZONE_MANAGER', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  ZONE_APPROVED:      ['DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  DEPT_APPROVED:      ['IREP', 'FACILITY_MANAGER', 'ADMIN'],
+  IREP_AUTHORIZED:    ['SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  SECURITY_AUTHORIZED:['FACILITY_MANAGER', 'ADMIN'],
 };
 
 function sourceFromFunction(fn) {
@@ -75,6 +75,54 @@ export async function createDeclaration(body, user) {
   });
 
   return decl;
+}
+
+export async function updateDeclaration(id, body, user) {
+  const decl = await prisma.scrapDeclaration.findUnique({ where: { id } });
+  if (!decl) throw new AppError('Declaration not found', 404, 'NOT_FOUND');
+  if (decl.status !== 'DRAFT') throw new AppError('Only DRAFT declarations can be edited', 409, 'CONFLICT');
+  if (decl.employee_id !== user.id && user.role !== 'ADMIN') {
+    throw new AppError('Cannot edit another user\'s declaration', 403, 'FORBIDDEN');
+  }
+
+  const source = sourceFromFunction(body.production_function);
+
+  // Replace all line items and update header atomically
+  await prisma.declarationLineItem.deleteMany({ where: { declaration_id: id } });
+
+  const updated = await prisma.scrapDeclaration.update({
+    where: { id },
+    data: {
+      date: new Date(body.date),
+      shift: body.shift,
+      time: body.time,
+      zone: body.zone,
+      production_function: body.production_function,
+      source,
+      description: body.description,
+      reference_no: body.reference_no,
+      line_items: {
+        create: body.line_items.map(li => ({
+          waste_type: li.waste_type,
+          category: li.category,
+          pallet_qty: li.pallet_qty ?? null,
+          weight_kg: li.weight_kg ?? null,
+          remarks: li.remarks ?? null,
+        })),
+      },
+    },
+    include: { line_items: true },
+  });
+
+  await logAudit({
+    userId: user.id,
+    action: 'DECLARATION_UPDATED',
+    entity: 'scrap_declarations',
+    entityId: id,
+    newValue: { status: 'DRAFT' },
+  });
+
+  return updated;
 }
 
 export async function submitDeclaration(id, user, ipAddress) {

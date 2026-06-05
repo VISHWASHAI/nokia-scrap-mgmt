@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import ApprovalChain from '../components/ApprovalChain.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
@@ -13,21 +13,23 @@ import { fmtKg } from '../utils/formatters.js';
 import { useState } from 'react';
 
 const APPROVER_FOR = {
-  SUBMITTED: ['ZONE_MANAGER', 'DEPT_HEAD', 'FACILITY_MANAGER', 'ADMIN'],
-  ZONE_APPROVED: ['DEPT_HEAD', 'FACILITY_MANAGER', 'ADMIN'],
-  DEPT_APPROVED: ['FACILITY_MANAGER', 'ADMIN'],
-  IREP_AUTHORIZED: ['FACILITY_MANAGER', 'ADMIN'],
-  SECURITY_AUTHORIZED: ['FACILITY_MANAGER', 'ADMIN'],
+  SUBMITTED:          ['ZONE_MANAGER', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  ZONE_APPROVED:      ['DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  DEPT_APPROVED:      ['IREP', 'FACILITY_MANAGER', 'ADMIN'],
+  IREP_AUTHORIZED:    ['SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  SECURITY_AUTHORIZED:['FACILITY_MANAGER', 'ADMIN'],
 };
 
 export default function DeclarationDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: decl, loading, error, refetch } = useDeclaration(id);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
 
-  const canSubmit = decl?.status === 'DRAFT' && decl?.employee_id === user?.id;
+  const canEdit    = decl?.status === 'DRAFT' && (decl?.employee_id === user?.id || user?.role === 'ADMIN');
+  const canSubmit  = canEdit;
   const canApprove = decl && (APPROVER_FOR[decl.status] || []).includes(user?.role);
 
   async function handleApprove() {
@@ -78,12 +80,12 @@ export default function DeclarationDetail() {
         {/* Header */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-bold font-mono text-gray-900">{decl.declaration_no}</h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <h1 className="text-xl font-bold font-mono text-white">{decl.declaration_no}</h1>
+            <p className="text-sm text-white/60 mt-0.5">
               {formatDate(decl.date)} · Shift {decl.shift} · {decl.time}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={decl.status} />
             {hasMinRole(user?.role, 'ZONE_MANAGER') && (
               <button onClick={handleDownload} className="btn-secondary text-xs">⬇ Excel</button>
@@ -145,8 +147,13 @@ export default function DeclarationDetail() {
         </div>
 
         {/* Actions */}
-        {(canSubmit || canApprove) && (
+        {(canEdit || canSubmit || canApprove) && (
           <div className="flex gap-3 justify-end">
+            {canEdit && (
+              <button onClick={() => navigate(`/declaration/${id}/edit`)} className="btn-secondary">
+                ✏ Edit Draft
+              </button>
+            )}
             {canSubmit && (
               <button onClick={handleSubmitAction} disabled={actionLoading} className="btn-primary">
                 {actionLoading ? 'Submitting…' : 'Submit for Approval'}

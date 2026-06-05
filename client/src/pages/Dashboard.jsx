@@ -33,7 +33,7 @@ export default function Dashboard() {
             <h1 className="section-title">Dashboard</h1>
             <p className="section-subtitle">Real-time scrap & waste overview · Nokia Manufacturing</p>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-nokia-muted bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-card">
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-white/70 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5">
             <span className="w-2 h-2 rounded-full bg-nokia-green animate-pulse" />
             Live data
           </div>

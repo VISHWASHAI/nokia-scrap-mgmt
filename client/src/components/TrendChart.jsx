@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-card-hover px-4 py-3 text-sm">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-md px-4 py-3 text-sm">
       <p className="font-semibold text-gray-700 mb-2 text-xs">{label}</p>
       {payload.map(p => (
         <div key={p.name} className="flex items-center gap-2 text-xs">

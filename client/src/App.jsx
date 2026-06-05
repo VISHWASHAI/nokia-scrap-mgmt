@@ -23,6 +23,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
       <Route path="/declaration/new" element={<RequireAuth><DeclarationForm /></RequireAuth>} />
+      <Route path="/declaration/:id/edit" element={<RequireAuth><DeclarationForm /></RequireAuth>} />
       <Route path="/declaration/:id" element={<RequireAuth><DeclarationDetail /></RequireAuth>} />
       <Route path="/submissions" element={<RequireAuth><Submissions /></RequireAuth>} />
       <Route path="/vendor-log" element={<RequireAuth><VendorLog /></RequireAuth>} />

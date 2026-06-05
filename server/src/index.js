@@ -25,7 +25,15 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 // CORS
 app.use(cors({
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+  origin: (origin, cb) => {
+    const allowed = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',').map(s => s.trim());
+    // Allow requests with no origin (curl, Postman) and any listed origin
+    if (!origin || allowed.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
   credentials: true,
 }));
 
@@ -52,17 +60,26 @@ app.use('/api/v1/declarations', declarationRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/vendor-pickups', vendorPickupRoutes);
 app.use('/api/v1/live', liveRoutes);
-app.use('/api/v1/admin/excel', adminExcelRoutes);
+app.use('/api/v1/admin-excel', adminExcelRoutes);
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
   res.json({ success: true, data: { status: 'ok', time: new Date().toISOString() } });
 });
 
-// 404
-app.use((req, res) => {
-  res.status(404).json({ success: false, error: { message: 'Route not found', code: 'NOT_FOUND' } });
-});
+// Serve React build in production
+if (process.env.NODE_ENV === 'production') {
+  const distPath = join(__dirname, '../../client/dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(join(distPath, 'index.html'));
+  });
+} else {
+  // 404 only in dev (in prod React router handles unknown paths)
+  app.use((req, res) => {
+    res.status(404).json({ success: false, error: { message: 'Route not found', code: 'NOT_FOUND' } });
+  });
+};
 
 // Global error handler
 app.use(errorHandler);

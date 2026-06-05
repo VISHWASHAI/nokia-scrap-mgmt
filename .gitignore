@@ -26,6 +26,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Generated Excel reports
+server/exports/
+
 # Temp
 *.tmp
 *.temp

@@ -4,8 +4,10 @@ const ROLE_RANK = {
   EMPLOYEE: 1,
   ZONE_MANAGER: 2,
   DEPT_HEAD: 3,
-  FACILITY_MANAGER: 4,
-  ADMIN: 5,
+  IREP: 4,
+  SECURITY: 5,
+  FACILITY_MANAGER: 6,
+  ADMIN: 7,
 };
 
 export function requireRole(...roles) {

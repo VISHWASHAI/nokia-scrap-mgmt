@@ -1,17 +1,12 @@
 import cron from 'node-cron';
-import dayjs from 'dayjs';
-import { generateReport } from '../services/excel.service.js';
-import { uploadToOneDrive } from '../services/graph.upload.js';
+import { triggerExport } from '../services/excel.service.js';
 
 export function registerNightlyExportJob() {
   cron.schedule('55 23 * * *', async () => {
-    console.log('[Cron] Nightly export starting…');
+    console.log('[Cron] Nightly export starting — full history snapshot…');
     try {
-      const today = dayjs().format('YYYY-MM-DD');
-      const buffer = await generateReport(today, today);
-      const filename = `Nokia_Scrap_Report_${dayjs().format('YYYYMMDD')}_nightly.xlsx`;
-      const result = await uploadToOneDrive(buffer, filename, null, 'CRON_NIGHTLY');
-      console.log('[Cron] Nightly export complete:', result.shareUrl ?? 'no URL');
+      const result = await triggerExport(null, 'CRON_NIGHTLY');
+      console.log('[Cron] Nightly export complete:', result.shareUrl ?? 'no URL (OneDrive not configured)');
     } catch (err) {
       console.error('[Cron] Nightly export failed:', err.message);
     }

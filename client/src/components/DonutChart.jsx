@@ -16,7 +16,7 @@ const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const d = payload[0];
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-card-hover px-4 py-3 text-sm">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-md px-4 py-3 text-sm">
       <div className="flex items-center gap-2">
         <span className="w-3 h-3 rounded-sm" style={{ background: d.payload.fill }} />
         <span className="font-semibold text-gray-900">{LABELS[d.name] || d.name}</span>

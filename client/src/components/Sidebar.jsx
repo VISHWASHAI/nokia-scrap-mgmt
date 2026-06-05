@@ -60,10 +60,13 @@ export default function Sidebar() {
   const { user } = useAuth();
 
   return (
-    <aside className="w-56 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <aside
+      className="w-56 flex flex-col flex-shrink-0 border-r border-white/10"
+      style={{ background: 'rgba(0,10,30,0.55)', backdropFilter: 'blur(16px)' }}
+    >
       {/* Nav group label */}
       <div className="px-4 pt-5 pb-2">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Menu</p>
+        <p className="text-xs font-semibold text-white/40 uppercase tracking-widest">Menu</p>
       </div>
 
       <nav className="flex-1 px-2 space-y-0.5">
@@ -76,19 +79,19 @@ export default function Sidebar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? 'bg-nokia-light text-nokia-blue'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-white/15 text-white'
+                    : 'text-white/60 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className={isActive ? 'text-nokia-blue' : 'text-gray-400'}>
+                  <span className={isActive ? 'text-[#00AACC]' : 'text-white/40'}>
                     {item.icon}
                   </span>
                   {item.label}
                   {isActive && (
-                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-nokia-blue" />
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00CC44]" />
                   )}
                 </>
               )}
@@ -98,14 +101,20 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom brand strip */}
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded"
-            style={{ background: 'linear-gradient(135deg,#0050FF,#00CC44)' }} />
-          <div>
-            <p className="text-xs font-semibold text-gray-700">Nokia</p>
-            <p className="text-xs text-gray-400">Scrap Mgmt v1.0</p>
-          </div>
+      <div className="p-4 border-t border-white/10">
+        <div
+          className="rounded-xl px-3 py-2.5 flex flex-col gap-1"
+          style={{ background: 'linear-gradient(135deg, rgba(0,80,255,0.18) 0%, rgba(0,204,68,0.12) 100%)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          {/* Mini Nokia wordmark */}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 32" className="h-4 w-auto" aria-label="Nokia">
+            <path d="M2 26 L2 6 L7 6 L15 18 L15 6 L20 6 L20 26 L15 26 L7 14 L7 26 Z" fill="white" opacity="0.9"/>
+            <path d="M28 6 C21 6 21 26 28 26 L35 26 C42 26 42 6 35 6 Z M28 11 L35 11 C38 11 38 21 35 21 L28 21 C25 21 25 11 28 11 Z" fill="white" opacity="0.9"/>
+            <path d="M48 6 L53 6 L53 14 L61 6 L67 6 L58 16 L67 26 L61 26 L53 18 L53 26 L48 26 Z" fill="white" opacity="0.9"/>
+            <path d="M71 6 L76 6 L76 26 L71 26 Z" fill="white" opacity="0.9"/>
+            <path d="M80 26 L88 6 L93 6 L101 26 L96 26 L90 10 L84 26 Z M85 18 L95 18 L94 22 L86 22 Z" fill="white" opacity="0.9"/>
+          </svg>
+          <p className="text-xs text-white/50 leading-none">Scrap & Waste Management</p>
         </div>
       </div>
     </aside>

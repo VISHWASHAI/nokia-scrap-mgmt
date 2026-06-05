@@ -8,7 +8,7 @@ export default function MetricCard({ title, value, unit = '', subtitle, accent =
   const a = accents[accent] || accents.blue;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-card overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Gradient top bar */}
       <div className={`h-1 w-full ${a.bar}`} />
       <div className="p-5">
