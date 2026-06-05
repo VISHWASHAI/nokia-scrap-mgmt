@@ -1,0 +1,220 @@
+// Nokia Scrap & Waste Management — Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  EMPLOYEE
+  ZONE_MANAGER
+  DEPT_HEAD
+  FACILITY_MANAGER
+  ADMIN
+}
+
+enum ProductionFunction {
+  SMT
+  MFT
+  REPAIR
+  RFM
+  FILTER
+  SQ
+}
+
+enum Shift {
+  A
+  B
+  C
+  G
+}
+
+enum DeclarationStatus {
+  DRAFT
+  SUBMITTED
+  ZONE_APPROVED
+  DEPT_APPROVED
+  IREP_AUTHORIZED
+  SECURITY_AUTHORIZED
+  COMPLETED
+}
+
+enum WasteSource {
+  BAT
+  SOFT
+}
+
+enum WasteType {
+  GENERAL
+  HAZARDOUS
+  EWASTE
+}
+
+enum LedgerSource {
+  BAT
+  SOFT
+  COMBINED
+}
+
+enum ExportTrigger {
+  DECLARATION_COMPLETED
+  CRON_NIGHTLY
+  MANUAL_DOWNLOAD
+}
+
+enum ExportStatus {
+  SUCCESS
+  FAILED
+}
+
+model Employee {
+  id                 String             @id @default(uuid())
+  emp_no             String             @unique
+  name               String
+  email              String             @unique
+  password_hash      String
+  role               Role               @default(EMPLOYEE)
+  production_function ProductionFunction?
+  zone               String?
+  is_active          Boolean            @default(true)
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+
+  declarations_made       ScrapDeclaration[] @relation("DeclaredBy")
+  zone_approvals          ScrapDeclaration[] @relation("ZoneManager")
+  dept_approvals          ScrapDeclaration[] @relation("DeptHead")
+  irep_authorizations     ScrapDeclaration[] @relation("IrepAuth")
+  security_authorizations ScrapDeclaration[] @relation("SecurityAuth")
+  vendor_pickups          VendorPickup[]
+  audit_logs              AuditLog[]
+
+  @@map("employees")
+}
+
+model ScrapDeclaration {
+  id                 String             @id @default(uuid())
+  declaration_no     String             @unique
+  employee_id        String
+  date               DateTime           @db.Date
+  shift              Shift
+  time               String
+  zone               String
+  production_function ProductionFunction
+  source             WasteSource
+  description        String?            @db.Text
+  reference_no       String?
+  status             DeclarationStatus  @default(DRAFT)
+
+  zone_manager_id    String?
+  dept_head_id       String?
+  irep_auth_by       String?
+  security_auth_by   String?
+
+  zone_approved_at   DateTime?
+  dept_approved_at   DateTime?
+  irep_authorized_at DateTime?
+  security_authorized_at DateTime?
+  completed_at       DateTime?
+
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @updatedAt
+
+  employee           Employee           @relation("DeclaredBy", fields: [employee_id], references: [id])
+  zone_manager       Employee?          @relation("ZoneManager", fields: [zone_manager_id], references: [id])
+  dept_head          Employee?          @relation("DeptHead", fields: [dept_head_id], references: [id])
+  irep_authorizer    Employee?          @relation("IrepAuth", fields: [irep_auth_by], references: [id])
+  security_authorizer Employee?         @relation("SecurityAuth", fields: [security_auth_by], references: [id])
+
+  line_items         DeclarationLineItem[]
+  ledger_entries     GenerationDisposalLedger[]
+  excel_exports      ExcelExportLog[]
+
+  @@map("scrap_declarations")
+}
+
+model DeclarationLineItem {
+  id             String    @id @default(uuid())
+  declaration_id String
+  waste_type     WasteType
+  category       String
+  pallet_qty     Decimal?  @db.Decimal(10, 3)
+  weight_kg      Decimal?  @db.Decimal(10, 3)
+  remarks        String?   @db.Text
+
+  declaration    ScrapDeclaration @relation(fields: [declaration_id], references: [id], onDelete: Cascade)
+
+  @@map("declaration_line_items")
+}
+
+model GenerationDisposalLedger {
+  id            String       @id @default(uuid())
+  date          DateTime     @db.Date
+  category      String
+  waste_type    WasteType
+  opening_stock Decimal      @db.Decimal(12, 3) @default(0)
+  waste_for_day Decimal      @db.Decimal(12, 3) @default(0)
+  disposal      Decimal      @db.Decimal(12, 3) @default(0)
+  closing_stock Decimal      @db.Decimal(12, 3) @default(0)
+  source        LedgerSource
+  declaration_id String?
+
+  declaration   ScrapDeclaration? @relation(fields: [declaration_id], references: [id])
+  created_at    DateTime     @default(now())
+
+  @@map("generation_disposal_ledger")
+}
+
+model VendorPickup {
+  id                   String   @id @default(uuid())
+  date                 DateTime @db.Date
+  vendor_name          String
+  vehicle_entry_no     String
+  vehicle_out_no       String?
+  vehicle_holding_time String?
+  invoice_raise_time   String?
+  invoice_received_time String?
+  category             String
+  remarks              String?  @db.Text
+  created_by           String
+
+  creator              Employee @relation(fields: [created_by], references: [id])
+  created_at           DateTime @default(now())
+
+  @@map("vendor_pickups")
+}
+
+model ExcelExportLog {
+  id              String        @id @default(uuid())
+  triggered_by    ExportTrigger
+  declaration_id  String?
+  onedrive_file_id String?
+  onedrive_url    String?
+  filename        String?
+  status          ExportStatus
+  error_message   String?       @db.Text
+  created_at      DateTime      @default(now())
+
+  declaration     ScrapDeclaration? @relation(fields: [declaration_id], references: [id])
+
+  @@map("excel_export_log")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  user_id    String
+  action     String
+  entity     String
+  entity_id  String
+  old_value  Json?
+  new_value  Json?
+  ip_address String?
+  created_at DateTime @default(now())
+
+  user       Employee @relation(fields: [user_id], references: [id])
+
+  @@map("audit_logs")
+}

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check src/services/declaration.service.js src/services/excel.service.js src/routes/live.routes.js src/routes/declaration.routes.js)",
+      "Bash(node_modules/.bin/prisma generate *)"
+    ]
+  }
+}
