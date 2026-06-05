@@ -1,23 +1,40 @@
-export default function MetricCard({ title, value, unit = '', subtitle, color = 'nokia-blue', loading }) {
-  const colorMap = {
-    'nokia-blue': 'border-t-nokia-blue',
-    'nokia-teal': 'border-t-nokia-teal',
-    'green': 'border-t-green-500',
-    'orange': 'border-t-orange-500',
+export default function MetricCard({ title, value, unit = '', subtitle, accent = 'blue', loading, icon }) {
+  const accents = {
+    blue:   { bar: 'bg-nokia-blue',  text: 'text-nokia-blue',  bg: 'bg-nokia-light' },
+    green:  { bar: 'bg-nokia-green', text: 'text-nokia-green', bg: 'bg-green-50' },
+    teal:   { bar: 'bg-nokia-teal',  text: 'text-nokia-teal',  bg: 'bg-cyan-50' },
+    orange: { bar: 'bg-orange-500',  text: 'text-orange-600',  bg: 'bg-orange-50' },
   };
+  const a = accents[accent] || accents.blue;
 
   return (
-    <div className={`card border-t-4 ${colorMap[color] || 'border-t-nokia-blue'}`}>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{title}</p>
-      {loading ? (
-        <div className="h-8 bg-gray-100 rounded animate-pulse w-2/3" />
-      ) : (
-        <p className="text-3xl font-bold text-gray-900">
-          {value}
-          {unit && <span className="text-base font-normal text-gray-500 ml-1">{unit}</span>}
-        </p>
-      )}
-      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+    <div className="bg-white rounded-xl border border-gray-200 shadow-card overflow-hidden">
+      {/* Gradient top bar */}
+      <div className={`h-1 w-full ${a.bar}`} />
+      <div className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+          {icon && (
+            <span className={`w-8 h-8 rounded-lg ${a.bg} ${a.text} flex items-center justify-center text-base`}>
+              {icon}
+            </span>
+          )}
+        </div>
+        {loading ? (
+          <div className="space-y-2">
+            <div className="h-8 bg-gray-100 rounded-lg animate-pulse w-3/4" />
+            <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2" />
+          </div>
+        ) : (
+          <>
+            <p className="text-3xl font-bold text-gray-900 tracking-tight">
+              {value}
+              {unit && <span className="text-sm font-medium text-gray-500 ml-1.5">{unit}</span>}
+            </p>
+            {subtitle && <p className="text-xs text-nokia-muted mt-1.5">{subtitle}</p>}
+          </>
+        )}
+      </div>
     </div>
   );
 }

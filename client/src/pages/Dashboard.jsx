@@ -17,57 +17,90 @@ export default function Dashboard() {
   const [dateTo, setDateTo] = useState(today());
   const [source, setSource] = useState('ALL');
 
-  const { data: ledger, loading: ledgerLoading } = useLedgerData({ date_from: dateFrom, date_to: dateTo, source: source === 'ALL' ? undefined : source });
+  const { data: ledger, loading: ledgerLoading } = useLedgerData({
+    date_from: dateFrom,
+    date_to: dateTo,
+    source: source === 'ALL' ? undefined : source,
+  });
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500">Scrap & waste overview for Nokia manufacturing facility</p>
+      <div className="space-y-6 max-w-screen-xl mx-auto">
+
+        {/* Page heading */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="section-title">Dashboard</h1>
+            <p className="section-subtitle">Real-time scrap & waste overview · Nokia Manufacturing</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-nokia-muted bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-card">
+            <span className="w-2 h-2 rounded-full bg-nokia-green animate-pulse" />
+            Live data
+          </div>
         </div>
 
         {/* Metric cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <MetricCard
             title="Total Waste Today"
-            value={sumLoading ? '—' : fmtNum(summary?.today_total_kg)}
+            value={fmtNum(summary?.today_total_kg ?? 0)}
             unit="kg"
-            color="nokia-blue"
+            accent="blue"
             loading={sumLoading}
+            icon="⚖️"
+            subtitle="Across all categories"
           />
           <MetricCard
             title="This Week"
-            value={sumLoading ? '—' : fmtNum(summary?.week_total_kg)}
+            value={fmtNum(summary?.week_total_kg ?? 0)}
             unit="kg"
-            color="nokia-teal"
+            accent="teal"
             loading={sumLoading}
+            icon="📅"
+            subtitle="Last 7 days total"
           />
           <MetricCard
             title="Pending Approvals"
-            value={sumLoading ? '—' : summary?.pending_approvals ?? 0}
-            color="orange"
+            value={summary?.pending_approvals ?? 0}
+            accent="orange"
             loading={sumLoading}
+            icon="⏳"
+            subtitle="Awaiting action"
           />
           <MetricCard
             title="Active Declarations"
-            value={sumLoading ? '—' : summary?.active_declarations ?? 0}
-            color="green"
+            value={summary?.active_declarations ?? 0}
+            accent="green"
             loading={sumLoading}
+            icon="📋"
+            subtitle="In approval flow"
           />
         </div>
 
-        {/* Bar chart with filters */}
+        {/* Bar chart */}
         <div className="card">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="font-semibold text-gray-900">Waste by Category</h2>
-            <div className="flex gap-2 flex-wrap">
-              <input type="date" className="form-input w-auto text-xs" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-              <input type="date" className="form-input w-auto text-xs" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-              <select className="form-select w-auto text-xs" value={source} onChange={e => setSource(e.target.value)}>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div>
+              <h2 className="font-semibold text-gray-900">Waste by Category</h2>
+              <p className="text-xs text-nokia-muted mt-0.5">BAT vs SOFT production — grouped by material</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                type="date" className="form-input w-auto text-xs py-1.5"
+                value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              />
+              <span className="text-gray-400 text-xs">to</span>
+              <input
+                type="date" className="form-input w-auto text-xs py-1.5"
+                value={dateTo} onChange={e => setDateTo(e.target.value)}
+              />
+              <select
+                className="form-select w-auto text-xs py-1.5"
+                value={source} onChange={e => setSource(e.target.value)}
+              >
                 <option value="ALL">All Sources</option>
-                <option value="BAT">BAT</option>
-                <option value="SOFT">SOFT</option>
+                <option value="BAT">BAT only</option>
+                <option value="SOFT">SOFT only</option>
               </select>
             </div>
           </div>
@@ -75,25 +108,32 @@ export default function Dashboard() {
         </div>
 
         {/* Trend + Donut */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">30-Day Trend</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <div className="card lg:col-span-3">
+            <h2 className="font-semibold text-gray-900 mb-1">30-Day Trend</h2>
+            <p className="text-xs text-nokia-muted mb-4">Daily waste generation — BAT vs SOFT</p>
             <TrendChart data={trends} loading={trendLoading} />
           </div>
-          <div className="card">
-            <h2 className="font-semibold text-gray-900 mb-4">By Waste Type (This Week)</h2>
+          <div className="card lg:col-span-2">
+            <h2 className="font-semibold text-gray-900 mb-1">By Waste Type</h2>
+            <p className="text-xs text-nokia-muted mb-4">Distribution this week</p>
             <DonutChart data={circularity?.by_type} loading={circLoading} />
           </div>
         </div>
 
         {/* Circularity table */}
         <div className="card">
-          <h2 className="font-semibold text-gray-900 mb-4">Weekly Circularity by Category</h2>
+          <div className="mb-4">
+            <h2 className="font-semibold text-gray-900">Weekly Circularity Matrix</h2>
+            <p className="text-xs text-nokia-muted mt-0.5">Waste per category × type this week</p>
+          </div>
           {circLoading ? (
-            <div className="h-40 bg-gray-50 rounded animate-pulse" />
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => <div key={i} className="h-10 bg-gray-100 rounded-lg animate-pulse" />)}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full">
                 <thead>
                   <tr>
                     <th className="table-header rounded-tl-lg">Category</th>
@@ -104,15 +144,19 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {(circularity?.by_function || []).map((row, i) => (
-                    <tr key={row.category} className={i % 2 === 1 ? 'bg-gray-50' : ''}>
-                      <td className="table-cell font-medium">{row.category}</td>
-                      <td className="table-cell">{Number(row.GENERAL ?? 0).toFixed(2)}</td>
-                      <td className="table-cell">{Number(row.HAZARDOUS ?? 0).toFixed(2)}</td>
-                      <td className="table-cell">{Number(row.EWASTE ?? 0).toFixed(2)}</td>
+                    <tr key={row.category} className={i % 2 === 1 ? 'bg-gray-50/70' : 'bg-white'}>
+                      <td className="table-cell font-medium text-gray-900">{row.category}</td>
+                      <td className="table-cell text-nokia-blue font-medium">{Number(row.GENERAL ?? 0).toFixed(3)}</td>
+                      <td className="table-cell text-orange-600 font-medium">{Number(row.HAZARDOUS ?? 0).toFixed(3)}</td>
+                      <td className="table-cell text-nokia-teal font-medium">{Number(row.EWASTE ?? 0).toFixed(3)}</td>
                     </tr>
                   ))}
                   {!circularity?.by_function?.length && (
-                    <tr><td colSpan={4} className="table-cell text-center text-gray-400">No data this week</td></tr>
+                    <tr>
+                      <td colSpan={4} className="table-cell text-center text-gray-400 py-8">
+                        No waste data recorded this week yet
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
