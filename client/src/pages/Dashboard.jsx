@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import dayjs from 'dayjs';
 import Layout from '../components/Layout.jsx';
 import MetricCard from '../components/MetricCard.jsx';
 import WasteBarChart from '../components/WasteBarChart.jsx';
+import MaterialBarChart from '../components/MaterialBarChart.jsx';
 import TrendChart from '../components/TrendChart.jsx';
 import DonutChart from '../components/DonutChart.jsx';
 import { useSummary, useTrends, useCircularity, useLedgerData } from '../hooks/useDashboard.js';
 import { fmtNum } from '../utils/formatters.js';
 import { today, weekAgo } from '../utils/dateHelpers.js';
+import { GENERAL_WASTE_CATEGORIES, HAZARDOUS_CATEGORIES, EWASTE_CATEGORIES } from '../constants/wasteCategories.js';
 
 export default function Dashboard() {
   const { data: summary, loading: sumLoading } = useSummary();
@@ -16,12 +19,27 @@ export default function Dashboard() {
   const [dateFrom, setDateFrom] = useState(weekAgo());
   const [dateTo, setDateTo] = useState(today());
   const [source, setSource] = useState('ALL');
+  const [material, setMaterial] = useState('');
 
   const { data: ledger, loading: ledgerLoading } = useLedgerData({
     date_from: dateFrom,
     date_to: dateTo,
     source: source === 'ALL' ? undefined : source,
   });
+
+  // Daily BAT/SOFT breakdown for a single chosen material category, derived from raw ledger rows
+  const materialChartData = useMemo(() => {
+    if (!material || !ledger?.raw) return [];
+    const byDate = {};
+    ledger.raw
+      .filter(l => l.category === material)
+      .forEach(l => {
+        const d = dayjs(l.date).format('YYYY-MM-DD');
+        if (!byDate[d]) byDate[d] = { date: d, BAT: 0, SOFT: 0 };
+        byDate[d][l.source] = (byDate[d][l.source] || 0) + Number(l.waste_for_day);
+      });
+    return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+  }, [material, ledger]);
 
   return (
     <Layout>
@@ -81,8 +99,10 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
             <div>
-              <h2 className="font-semibold text-gray-900">Waste by Category</h2>
-              <p className="text-xs text-nokia-muted mt-0.5">BAT vs SOFT production — grouped by material</p>
+              <h2 className="font-semibold text-gray-900">{material ? `Material Trend — ${material}` : 'Waste by Category'}</h2>
+              <p className="text-xs text-nokia-muted mt-0.5">
+                {material ? 'Daily BAT vs SOFT generation for the selected material' : 'BAT vs SOFT production — grouped by material'}
+              </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <input
@@ -102,9 +122,29 @@ export default function Dashboard() {
                 <option value="BAT">BAT only</option>
                 <option value="SOFT">SOFT only</option>
               </select>
+              <select
+                className="form-select w-auto text-xs py-1.5 max-w-[200px]"
+                value={material} onChange={e => setMaterial(e.target.value)}
+              >
+                <option value="">All Materials (by category)</option>
+                <optgroup label="General Waste">
+                  {GENERAL_WASTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+                <optgroup label="Hazardous">
+                  {HAZARDOUS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+                <optgroup label="E-Waste">
+                  {EWASTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+              </select>
+              {material && (
+                <button onClick={() => setMaterial('')} className="btn-secondary text-xs py-1.5">✕ Clear</button>
+              )}
             </div>
           </div>
-          <WasteBarChart data={ledger?.by_category} loading={ledgerLoading} />
+          {material
+            ? <MaterialBarChart data={materialChartData} loading={ledgerLoading} materialName={material} />
+            : <WasteBarChart data={ledger?.by_category} loading={ledgerLoading} />}
         </div>
 
         {/* Trend + Donut */}
@@ -117,7 +157,7 @@ export default function Dashboard() {
           <div className="card lg:col-span-2">
             <h2 className="font-semibold text-gray-900 mb-1">By Waste Type</h2>
             <p className="text-xs text-nokia-muted mb-4">Distribution this week</p>
-            <DonutChart data={circularity?.by_type} loading={circLoading} />
+            <DonutChart data={circularity?.by_type} byCategory={circularity?.by_function} loading={circLoading} />
           </div>
         </div>
 
