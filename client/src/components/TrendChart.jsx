@@ -30,10 +30,13 @@ export default function TrendChart({ data = [], loading }) {
     </div>
   );
 
+  // Use a coarser date format and skip ticks once the range gets long, so labels stay readable
+  const longRange = data.length > 60;
   const formatted = data.map(d => ({
     ...d,
-    date: dayjs(d.date).format('DD MMM'),
+    date: dayjs(d.date).format(longRange ? 'MMM YY' : 'DD MMM'),
   }));
+  const tickInterval = Math.max(0, Math.ceil(data.length / 12) - 1);
 
   return (
     <ResponsiveContainer width="100%" height={224}>
@@ -49,7 +52,14 @@ export default function TrendChart({ data = [], loading }) {
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#6B7A99' }} axisLine={false} tickLine={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 10, fill: '#6B7A99' }}
+          axisLine={false}
+          tickLine={false}
+          interval={tickInterval}
+          minTickGap={24}
+        />
         <YAxis tick={{ fontSize: 11, fill: '#6B7A99' }} unit=" kg" width={64} axisLine={false} tickLine={false} />
         <Tooltip content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12 }} formatter={(v) => <span style={{ color: '#374151', fontWeight: 500 }}>{v}</span>} />

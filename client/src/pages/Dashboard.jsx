@@ -11,10 +11,19 @@ import { fmtNum } from '../utils/formatters.js';
 import { today, weekAgo } from '../utils/dateHelpers.js';
 import { GENERAL_WASTE_CATEGORIES, HAZARDOUS_CATEGORIES, EWASTE_CATEGORIES } from '../constants/wasteCategories.js';
 
+const TREND_RANGES = [
+  { label: '30 Days',  shortLabel: '30D', days: 30 },
+  { label: '3 Months', shortLabel: '3M',  days: 90 },
+  { label: '6 Months', shortLabel: '6M',  days: 180 },
+  { label: '1 Year',   shortLabel: '1Y',  days: 365 },
+];
+
 export default function Dashboard() {
   const { data: summary, loading: sumLoading } = useSummary();
-  const { data: trends, loading: trendLoading } = useTrends(30);
+  const [trendDays, setTrendDays] = useState(30);
+  const { data: trends, loading: trendLoading } = useTrends(trendDays);
   const { data: circularity, loading: circLoading } = useCircularity();
+  const trendRange = TREND_RANGES.find(r => r.days === trendDays) ?? TREND_RANGES[0];
 
   const [dateFrom, setDateFrom] = useState(weekAgo());
   const [dateTo, setDateTo] = useState(today());
@@ -150,8 +159,25 @@ export default function Dashboard() {
         {/* Trend + Donut */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="card lg:col-span-3">
-            <h2 className="font-semibold text-gray-900 mb-1">30-Day Trend</h2>
-            <p className="text-xs text-nokia-muted mb-4">Daily waste generation — BAT vs SOFT</p>
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+              <div>
+                <h2 className="font-semibold text-gray-900">{trendRange.label} Trend</h2>
+                <p className="text-xs text-nokia-muted mt-0.5">Daily waste generation — BAT vs SOFT</p>
+              </div>
+              <div className="inline-flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                {TREND_RANGES.map(r => (
+                  <button
+                    key={r.days}
+                    onClick={() => setTrendDays(r.days)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      trendDays === r.days ? 'bg-white text-nokia-blue shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {r.shortLabel}
+                  </button>
+                ))}
+              </div>
+            </div>
             <TrendChart data={trends} loading={trendLoading} />
           </div>
           <div className="card lg:col-span-2">
