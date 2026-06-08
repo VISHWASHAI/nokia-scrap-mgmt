@@ -7,8 +7,13 @@ function useFetch(fn, deps = []) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
-    fn().then(setData).catch(err => setError(err.message)).finally(() => setLoading(false));
+    fn()
+      .then(res => { if (!cancelled) setData(res); })
+      .catch(err => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, deps);
 
   return { data, loading, error };
