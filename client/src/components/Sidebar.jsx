@@ -106,14 +106,7 @@ export default function Sidebar() {
           className="rounded-xl px-3 py-2.5 flex flex-col gap-1"
           style={{ background: 'linear-gradient(135deg, rgba(0,80,255,0.18) 0%, rgba(0,204,68,0.12) 100%)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          {/* Mini Nokia wordmark */}
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 32" className="h-4 w-auto" aria-label="Nokia">
-            <path d="M2 26 L2 6 L7 6 L15 18 L15 6 L20 6 L20 26 L15 26 L7 14 L7 26 Z" fill="white" opacity="0.9"/>
-            <path d="M28 6 C21 6 21 26 28 26 L35 26 C42 26 42 6 35 6 Z M28 11 L35 11 C38 11 38 21 35 21 L28 21 C25 21 25 11 28 11 Z" fill="white" opacity="0.9"/>
-            <path d="M48 6 L53 6 L53 14 L61 6 L67 6 L58 16 L67 26 L61 26 L53 18 L53 26 L48 26 Z" fill="white" opacity="0.9"/>
-            <path d="M71 6 L76 6 L76 26 L71 26 Z" fill="white" opacity="0.9"/>
-            <path d="M80 26 L88 6 L93 6 L101 26 L96 26 L90 10 L84 26 Z M85 18 L95 18 L94 22 L86 22 Z" fill="white" opacity="0.9"/>
-          </svg>
+          <img src="/nokia-logo.png" alt="Nokia" className="h-5 w-auto rounded shadow-sm" />
           <p className="text-xs text-white/70 leading-none">Scrap & Waste Management</p>
         </div>
       </div>

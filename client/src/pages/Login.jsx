@@ -33,7 +33,7 @@ export default function Login() {
         <div className="absolute top-1/3 right-8 w-48 h-48 rounded-full bg-white/5" />
 
         <div className="relative z-10 text-center">
-          <img src="/nokia-logo.svg" alt="Nokia" className="h-16 mx-auto mb-8" />
+          <img src="/nokia-logo.png" alt="Nokia" className="h-16 mx-auto mb-8 rounded-lg shadow-lg" />
           <h1 className="text-white text-3xl font-bold mb-3 tracking-tight">
             Scrap & Waste<br />Management System
           </h1>
@@ -58,7 +58,7 @@ export default function Login() {
 
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <img src="/nokia-logo.svg" alt="Nokia" className="h-10 mx-auto" />
+            <img src="/nokia-logo.png" alt="Nokia" className="h-10 mx-auto rounded-md shadow" />
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
