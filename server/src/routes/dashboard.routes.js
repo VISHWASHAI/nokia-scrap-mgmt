@@ -72,9 +72,13 @@ router.get('/trends', async (req, res, next) => {
   try {
     const days = parseInt(req.query.days) || 30;
     const from = dayjs().subtract(days - 1, 'day').startOf('day').toDate();
+    const category = req.query.category || null;
+
+    const where = { date: { gte: from } };
+    if (category) where.category = category;
 
     const ledger = await prisma.generationDisposalLedger.findMany({
-      where: { date: { gte: from } },
+      where,
       orderBy: { date: 'asc' },
     });
 

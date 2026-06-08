@@ -51,10 +51,53 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
  * GENERAL/HAZARDOUS/EWASTE kg columns) — used to build the drill-down view
  * when a top-level waste-type slice is clicked.
  */
-export default function DonutChart({ data, byCategory = [], loading }) {
+export default function DonutChart({ data, byCategory = [], loading, materialView }) {
   const [selectedType, setSelectedType] = useState(null);
 
   if (loading) return <div className="h-56 bg-gray-50 rounded-xl animate-pulse" />;
+
+  // Material-filtered mode: show a simple BAT vs SOFT split for the chosen material
+  if (materialView) {
+    const { label, totals } = materialView;
+    const matEntries = [
+      { name: 'BAT',  value: Number(totals?.BAT  || 0), fill: '#0050FF' },
+      { name: 'SOFT', value: Number(totals?.SOFT || 0), fill: '#00CC44' },
+    ].filter(e => e.value > 0);
+
+    if (!matEntries.length) return (
+      <div className="h-56 flex items-center justify-center text-gray-400 bg-gray-50 rounded-xl text-sm text-center px-4">
+        No waste recorded for "{label}" in the selected range
+      </div>
+    );
+
+    return (
+      <div>
+        <p className="text-[11px] text-gray-400 text-center mb-1">BAT vs SOFT split for "{label}"</p>
+        <div key={`material-${label}`} className="donut-zoom-enter">
+          <ResponsiveContainer width="100%" height={224}>
+            <PieChart>
+              <Pie
+                data={matEntries}
+                cx="50%" cy="50%"
+                innerRadius={58} outerRadius={88}
+                dataKey="value"
+                labelLine={false}
+                label={renderCustomLabel}
+                isAnimationActive
+                animationDuration={550}
+                animationEasing="ease-out"
+              >
+                {matEntries.map((e, i) => <Cell key={i} fill={e.fill} stroke="white" strokeWidth={2} />)}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend formatter={(v) => <span style={{ color: '#374151', fontSize: 12, fontWeight: 500 }}>{v}</span>} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  }
+
   if (!data) return null;
 
   const topEntries = Object.entries(data)

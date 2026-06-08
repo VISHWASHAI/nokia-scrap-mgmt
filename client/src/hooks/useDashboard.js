@@ -15,6 +15,7 @@ function useFetch(fn, deps = []) {
 }
 
 export const useSummary = () => useFetch(svc.getSummary);
-export const useTrends = (days = 30) => useFetch(() => svc.getTrends({ days }), [days]);
+export const useTrends = (days = 30, category) =>
+  useFetch(() => svc.getTrends({ days, category: category || undefined }), [days, category]);
 export const useCircularity = () => useFetch(svc.getCircularity);
 export const useLedgerData = (params) => useFetch(() => svc.getLedger(params), [JSON.stringify(params)]);

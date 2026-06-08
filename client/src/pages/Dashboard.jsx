@@ -9,7 +9,7 @@ import DonutChart from '../components/DonutChart.jsx';
 import { useSummary, useTrends, useCircularity, useLedgerData } from '../hooks/useDashboard.js';
 import { fmtNum } from '../utils/formatters.js';
 import { today, weekAgo } from '../utils/dateHelpers.js';
-import { GENERAL_WASTE_CATEGORIES, HAZARDOUS_CATEGORIES, EWASTE_CATEGORIES } from '../constants/wasteCategories.js';
+import MaterialSelect from '../components/MaterialSelect.jsx';
 
 const TREND_RANGES = [
   { label: '30 Days',  shortLabel: '30D', days: 30 },
@@ -20,15 +20,16 @@ const TREND_RANGES = [
 
 export default function Dashboard() {
   const { data: summary, loading: sumLoading } = useSummary();
+  const [material, setMaterial] = useState('');
+
   const [trendDays, setTrendDays] = useState(30);
-  const { data: trends, loading: trendLoading } = useTrends(trendDays);
+  const { data: trends, loading: trendLoading } = useTrends(trendDays, material);
   const { data: circularity, loading: circLoading } = useCircularity();
   const trendRange = TREND_RANGES.find(r => r.days === trendDays) ?? TREND_RANGES[0];
 
   const [dateFrom, setDateFrom] = useState(weekAgo());
   const [dateTo, setDateTo] = useState(today());
   const [source, setSource] = useState('ALL');
-  const [material, setMaterial] = useState('');
 
   const { data: ledger, loading: ledgerLoading } = useLedgerData({
     date_from: dateFrom,
@@ -48,6 +49,16 @@ export default function Dashboard() {
         byDate[d][l.source] = (byDate[d][l.source] || 0) + Number(l.waste_for_day);
       });
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+  }, [material, ledger]);
+
+  // BAT vs SOFT totals for the chosen material across the selected date range, for the donut
+  const materialSourceSplit = useMemo(() => {
+    if (!material || !ledger?.raw) return null;
+    const totals = { BAT: 0, SOFT: 0 };
+    ledger.raw
+      .filter(l => l.category === material)
+      .forEach(l => { totals[l.source] = (totals[l.source] || 0) + Number(l.waste_for_day); });
+    return totals;
   }, [material, ledger]);
 
   return (
@@ -131,21 +142,7 @@ export default function Dashboard() {
                 <option value="BAT">BAT only</option>
                 <option value="SOFT">SOFT only</option>
               </select>
-              <select
-                className="form-select w-auto text-xs py-1.5 max-w-[200px]"
-                value={material} onChange={e => setMaterial(e.target.value)}
-              >
-                <option value="">All Materials (by category)</option>
-                <optgroup label="General Waste">
-                  {GENERAL_WASTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </optgroup>
-                <optgroup label="Hazardous">
-                  {HAZARDOUS_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </optgroup>
-                <optgroup label="E-Waste">
-                  {EWASTE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </optgroup>
-              </select>
+              <MaterialSelect value={material} onChange={setMaterial} />
               {material && (
                 <button onClick={() => setMaterial('')} className="btn-secondary text-xs py-1.5">✕ Clear</button>
               )}
@@ -161,8 +158,10 @@ export default function Dashboard() {
           <div className="card lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
               <div>
-                <h2 className="font-semibold text-gray-900">{trendRange.label} Trend</h2>
-                <p className="text-xs text-nokia-muted mt-0.5">Daily waste generation — BAT vs SOFT</p>
+                <h2 className="font-semibold text-gray-900">{trendRange.label} Trend{material ? ` — ${material}` : ''}</h2>
+                <p className="text-xs text-nokia-muted mt-0.5">
+                  {material ? `Daily BAT vs SOFT generation for "${material}"` : 'Daily waste generation — BAT vs SOFT'}
+                </p>
               </div>
               <div className="inline-flex items-center gap-1 bg-gray-100 rounded-lg p-1">
                 {TREND_RANGES.map(r => (
@@ -178,12 +177,27 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+            <div className="flex justify-end mb-3">
+              <MaterialSelect value={material} onChange={setMaterial} />
+            </div>
             <TrendChart data={trends} loading={trendLoading} />
           </div>
           <div className="card lg:col-span-2">
-            <h2 className="font-semibold text-gray-900 mb-1">By Waste Type</h2>
-            <p className="text-xs text-nokia-muted mb-4">Distribution this week</p>
-            <DonutChart data={circularity?.by_type} byCategory={circularity?.by_function} loading={circLoading} />
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
+              <div>
+                <h2 className="font-semibold text-gray-900">{material ? `Source Split — ${material}` : 'By Waste Type'}</h2>
+                <p className="text-xs text-nokia-muted mt-0.5">{material ? `${dateFrom} to ${dateTo}` : 'Distribution this week'}</p>
+              </div>
+            </div>
+            <div className="flex justify-end mb-3">
+              <MaterialSelect value={material} onChange={setMaterial} />
+            </div>
+            <DonutChart
+              data={circularity?.by_type}
+              byCategory={circularity?.by_function}
+              loading={circLoading || (!!material && ledgerLoading)}
+              materialView={material ? { label: material, totals: materialSourceSplit } : null}
+            />
           </div>
         </div>
 
