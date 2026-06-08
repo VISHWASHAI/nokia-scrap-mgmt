@@ -3,10 +3,24 @@ import prisma from '../utils/prisma.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createVendorPickupSchema } from '../schemas/vendorPickup.schema.js';
+import { generateVendorInvoiceReport } from '../services/excel.service.js';
 import { ok } from '../utils/response.js';
 
 const router = Router();
 router.use(authenticate);
+
+router.get('/export/invoice', async (req, res, next) => {
+  try {
+    const dateFrom = req.query.date_from || null;
+    const dateTo   = req.query.date_to   || null;
+    const buffer   = await generateVendorInvoiceReport(dateFrom, dateTo);
+    const filename = 'Nokia_Vendor_Invoice_Sheet.xlsx';
+
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (err) { next(err); }
+});
 
 router.post('/', validate(createVendorPickupSchema), async (req, res, next) => {
   try {

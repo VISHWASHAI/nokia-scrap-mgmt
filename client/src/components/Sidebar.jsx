@@ -66,7 +66,7 @@ export default function Sidebar() {
     >
       {/* Nav group label */}
       <div className="px-4 pt-5 pb-2">
-        <p className="text-xs font-semibold text-white/40 uppercase tracking-widest">Menu</p>
+        <p className="text-xs font-semibold text-white/65 uppercase tracking-widest">Menu</p>
       </div>
 
       <nav className="flex-1 px-2 space-y-0.5">
@@ -80,13 +80,13 @@ export default function Sidebar() {
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
                     ? 'bg-white/15 text-white'
-                    : 'text-white/60 hover:bg-white/10 hover:text-white'
+                    : 'text-white/85 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <span className={isActive ? 'text-[#00AACC]' : 'text-white/40'}>
+                  <span className={isActive ? 'text-[#00AACC]' : 'text-white/65'}>
                     {item.icon}
                   </span>
                   {item.label}
@@ -114,7 +114,7 @@ export default function Sidebar() {
             <path d="M71 6 L76 6 L76 26 L71 26 Z" fill="white" opacity="0.9"/>
             <path d="M80 26 L88 6 L93 6 L101 26 L96 26 L90 10 L84 26 Z M85 18 L95 18 L94 22 L86 22 Z" fill="white" opacity="0.9"/>
           </svg>
-          <p className="text-xs text-white/50 leading-none">Scrap & Waste Management</p>
+          <p className="text-xs text-white/70 leading-none">Scrap & Waste Management</p>
         </div>
       </div>
     </aside>

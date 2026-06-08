@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import Layout from '../components/Layout.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
-import { createVendorPickup, getVendorPickups } from '../services/liveExcel.js';
+import { createVendorPickup, getVendorPickups, downloadVendorInvoice } from '../services/liveExcel.js';
 import { formatDate } from '../utils/dateHelpers.js';
 import { today } from '../utils/dateHelpers.js';
 import { useEffect } from 'react';
@@ -21,6 +22,7 @@ export default function VendorLog() {
   const [pickups, setPickups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState('');
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   async function fetchPickups() {
     setLoading(true);
@@ -56,6 +58,22 @@ export default function VendorLog() {
   }
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleDownloadInvoice() {
+    setListError('');
+    setDownloadingInvoice(true);
+    try {
+      const blob = await downloadVendorInvoice();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Nokia_Vendor_Invoice_Sheet_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setListError('Invoice sheet download failed');
+    } finally { setDownloadingInvoice(false); }
+  }
 
   return (
     <Layout>
@@ -95,7 +113,12 @@ export default function VendorLog() {
 
         {/* Table */}
         <div className="card">
-          <h2 className="font-semibold text-gray-900 mb-4">Recent Pickups</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">Recent Pickups</h2>
+            <button onClick={handleDownloadInvoice} disabled={downloadingInvoice} className="btn-secondary text-xs">
+              {downloadingInvoice ? 'Preparing…' : '⬇ Download Invoice Sheet'}
+            </button>
+          </div>
           {listError && <ErrorAlert message={listError} onRetry={fetchPickups} />}
           {loading ? <LoadingSpinner /> : (
             <div className="overflow-x-auto">

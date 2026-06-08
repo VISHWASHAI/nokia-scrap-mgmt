@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import dayjs from 'dayjs';
 import Layout from '../components/Layout.jsx';
 import ApprovalChain from '../components/ApprovalChain.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
@@ -60,7 +61,7 @@ export default function DeclarationDetail() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Nokia_Scrap_Report.xlsx`;
+      a.download = `Nokia_Scrap_Report_${dayjs().format('YYYY-MM-DD_HH-mm-ss')}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

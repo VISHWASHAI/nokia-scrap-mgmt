@@ -327,6 +327,87 @@ export async function generateReport(dateFrom, dateTo) {
   return Buffer.from(buffer);
 }
 
+// ── Vendor pickup invoice sheet ───────────────────────────────────────────────
+export async function generateVendorInvoiceReport(dateFrom, dateTo) {
+  const where = {};
+  if (dateFrom) where.date = { ...where.date, gte: new Date(dateFrom) };
+  if (dateTo)   where.date = { ...where.date, lte: new Date(dateTo + 'T23:59:59Z') };
+
+  const pickups = await prisma.vendorPickup.findMany({
+    where,
+    include: { creator: { select: { name: true, emp_no: true } } },
+    orderBy: { date: 'desc' },
+  });
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Nokia Scrap Management System';
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet('Vendor Invoice Sheet');
+  const headerLabels = ['Date', 'Vendor Name', 'Vehicle Entry No', 'Vehicle Out No', 'Holding Time', 'Category', 'Invoice Raise Time', 'Invoice Received Time', 'Remarks', 'Logged By'];
+  const widths = [14, 24, 16, 16, 16, 22, 16, 18, 28, 20];
+  ws.columns = headerLabels.map((_, i) => ({ key: `c${i}`, width: widths[i] }));
+
+  ws.mergeCells(1, 1, 1, headerLabels.length);
+  const titleCell = ws.getCell(1, 1);
+  titleCell.value = 'NOKIA — VENDOR PICKUP INVOICE SHEET';
+  titleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+  titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NOKIA_BLUE } };
+  ws.getRow(1).height = 26;
+
+  ws.mergeCells(2, 1, 2, headerLabels.length);
+  const subCell = ws.getCell(2, 1);
+  subCell.value = `Generated ${dayjs().format('DD-MM-YYYY HH:mm:ss')}` +
+    (dateFrom && dateTo ? ` · Range ${dayjs(dateFrom).format('DD-MM-YYYY')} – ${dayjs(dateTo).format('DD-MM-YYYY')}` : ' · All Records');
+  subCell.font = { italic: true, size: 10, color: { argb: 'FF666666' } };
+  subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+  ws.getRow(2).height = 18;
+
+  const hRow = ws.getRow(4);
+  headerLabels.forEach((label, i) => {
+    const cell = hRow.getCell(i + 1);
+    cell.value = label;
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: NOKIA_DARK } };
+    cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+  });
+  hRow.height = 24;
+
+  pickups.forEach((p, i) => {
+    const row = ws.addRow([
+      dayjs(p.date).format('DD-MM-YYYY'),
+      p.vendor_name,
+      p.vehicle_entry_no,
+      p.vehicle_out_no || '—',
+      p.vehicle_holding_time || '—',
+      p.category,
+      p.invoice_raise_time || '—',
+      p.invoice_received_time || '—',
+      p.remarks || '—',
+      p.creator?.name || '—',
+    ]);
+    row.eachCell(cell => {
+      cell.border = {
+        top:    { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        left:   { style: 'thin', color: { argb: 'FFE0E0E0' } },
+        right:  { style: 'thin', color: { argb: 'FFE0E0E0' } },
+      };
+      cell.alignment = { vertical: 'middle' };
+    });
+    if (i % 2 === 1) {
+      row.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: ALT_ROW_FILL } };
+      });
+    }
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
 export async function triggerExport(declarationId, triggeredBy = 'DECLARATION_COMPLETED') {
   const buffer = await generateReport();
   return saveReportLocally(buffer, declarationId, triggeredBy);
