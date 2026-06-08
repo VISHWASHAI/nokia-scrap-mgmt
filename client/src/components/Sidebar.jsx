@@ -102,12 +102,11 @@ export default function Sidebar() {
 
       {/* Bottom brand strip */}
       <div className="p-4 border-t border-white/10">
-        <div
-          className="rounded-xl px-3 py-2.5 flex flex-col gap-1"
-          style={{ background: 'linear-gradient(135deg, rgba(0,80,255,0.18) 0%, rgba(0,204,68,0.12) 100%)', border: '1px solid rgba(255,255,255,0.08)' }}
-        >
-          <img src="/nokia-logo.png" alt="Nokia" className="h-5 w-auto rounded shadow-sm" />
-          <p className="text-xs text-white/70 leading-none">Scrap & Waste Management</p>
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+          <img src="/nokia-logo.png" alt="Nokia" className="w-full h-12 object-cover block" />
+          <div className="px-3 py-2 bg-white/5">
+            <p className="text-xs text-white/70 leading-none">Scrap & Waste Management</p>
+          </div>
         </div>
       </div>
     </aside>
