@@ -18,8 +18,8 @@ export default function DeclarationTable({ items = [], loading, emptyText = 'No 
     (line_items || []).reduce((s, li) => s + Number(li.weight_kg ?? 0), 0);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="min-w-full">
+    <div className="overflow-x-auto rounded-lg border border-gray-200 -mx-3 sm:mx-0">
+      <table className="min-w-[640px] w-full">
         <thead>
           <tr>
             {['Declaration No', 'Date', 'Zone', 'Function', 'Source', 'Total Weight', 'Status', 'Actions'].map(h => (

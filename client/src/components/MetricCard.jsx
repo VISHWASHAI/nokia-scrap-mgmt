@@ -9,29 +9,30 @@ export default function MetricCard({ title, value, unit = '', subtitle, accent =
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      {/* Gradient top bar */}
       <div className={`h-1 w-full ${a.bar}`} />
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+      <div className="p-3 sm:p-5">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <p className="text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider leading-tight pr-1">
+            {title}
+          </p>
           {icon && (
-            <span className={`w-8 h-8 rounded-lg ${a.bg} ${a.text} flex items-center justify-center text-base`}>
+            <span className={`hidden sm:flex w-8 h-8 rounded-lg ${a.bg} ${a.text} items-center justify-center text-base flex-shrink-0`}>
               {icon}
             </span>
           )}
         </div>
         {loading ? (
           <div className="space-y-2">
-            <div className="h-8 bg-gray-100 rounded-lg animate-pulse w-3/4" />
+            <div className="h-7 bg-gray-100 rounded-lg animate-pulse w-3/4" />
             <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2" />
           </div>
         ) : (
           <>
-            <p className="text-3xl font-bold text-gray-900 tracking-tight">
+            <p className="text-xl sm:text-3xl font-bold text-gray-900 tracking-tight">
               {value}
-              {unit && <span className="text-sm font-medium text-gray-500 ml-1.5">{unit}</span>}
+              {unit && <span className="text-xs sm:text-sm font-medium text-gray-500 ml-1">{unit}</span>}
             </p>
-            {subtitle && <p className="text-xs text-nokia-muted mt-1.5">{subtitle}</p>}
+            {subtitle && <p className="text-[10px] sm:text-xs text-nokia-muted mt-1 leading-tight">{subtitle}</p>}
           </>
         )}
       </div>

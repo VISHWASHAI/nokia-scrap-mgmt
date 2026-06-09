@@ -63,22 +63,22 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="space-y-6 max-w-screen-xl mx-auto">
+      <div className="space-y-4 md:space-y-6 max-w-screen-xl mx-auto">
 
         {/* Page heading */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="section-title">Dashboard</h1>
-            <p className="section-subtitle">Real-time scrap & waste overview · Nokia Manufacturing</p>
+            <p className="section-subtitle hidden sm:block">Real-time scrap & waste overview · Nokia Manufacturing</p>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-white/70 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-white/70 bg-white/10 border border-white/20 rounded-lg px-2.5 py-1.5">
             <span className="w-2 h-2 rounded-full bg-nokia-green animate-pulse" />
-            Live data
+            <span className="hidden sm:inline">Live data</span>
           </div>
         </div>
 
         {/* Metric cards */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
             title="Total Waste Today"
             value={fmtNum(summary?.today_total_kg ?? 0)}
@@ -117,23 +117,25 @@ export default function Dashboard() {
 
         {/* Bar chart */}
         <div className="card">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-5">
             <div>
               <h2 className="font-semibold text-gray-900">{material ? `Material Trend — ${material}` : 'Waste by Category'}</h2>
               <p className="text-xs text-nokia-muted mt-0.5">
                 {material ? 'Daily BAT vs SOFT generation for the selected material' : 'BAT vs SOFT production — grouped by material'}
               </p>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <input
-                type="date" className="form-input w-auto text-xs py-1.5"
-                value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              />
-              <span className="text-gray-400 text-xs">to</span>
-              <input
-                type="date" className="form-input w-auto text-xs py-1.5"
-                value={dateTo} onChange={e => setDateTo(e.target.value)}
-              />
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date" className="form-input text-xs py-1.5 w-[130px] sm:w-auto"
+                  value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                />
+                <span className="text-gray-400 text-xs">to</span>
+                <input
+                  type="date" className="form-input text-xs py-1.5 w-[130px] sm:w-auto"
+                  value={dateTo} onChange={e => setDateTo(e.target.value)}
+                />
+              </div>
               <select
                 className="form-select w-auto text-xs py-1.5"
                 value={source} onChange={e => setSource(e.target.value)}
@@ -154,7 +156,7 @@ export default function Dashboard() {
         </div>
 
         {/* Trend + Donut */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4">
           <div className="card lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
               <div>

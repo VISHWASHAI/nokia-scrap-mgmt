@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { hasMinRole } from '../constants/roles.js';
 
@@ -56,26 +56,50 @@ const navItems = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
 
   return (
     <aside
-      className="w-56 flex flex-col flex-shrink-0 border-r border-white/10"
-      style={{ background: 'rgba(0,10,30,0.55)', backdropFilter: 'blur(16px)' }}
+      className={[
+        // Base: always a column flex
+        'flex flex-col flex-shrink-0 border-r border-white/10',
+        // Mobile: fixed overlay drawer
+        'fixed inset-y-0 left-0 z-40 w-64',
+        'transform transition-transform duration-300 ease-in-out',
+        isOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: static sidebar, always visible, narrower
+        'md:relative md:z-auto md:w-56 md:translate-x-0',
+      ].join(' ')}
+      style={{ background: 'rgba(0,10,30,0.92)', backdropFilter: 'blur(16px)' }}
     >
-      {/* Nav group label */}
-      <div className="px-4 pt-5 pb-2">
+      {/* Mobile close button */}
+      <div className="md:hidden flex items-center justify-between px-4 pt-4 pb-2 border-b border-white/10">
+        <p className="text-xs font-semibold text-white/65 uppercase tracking-widest">Menu</p>
+        <button
+          onClick={onClose}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          aria-label="Close menu"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Desktop nav group label */}
+      <div className="hidden md:block px-4 pt-5 pb-2">
         <p className="text-xs font-semibold text-white/65 uppercase tracking-widest">Menu</p>
       </div>
 
-      <nav className="flex-1 px-2 space-y-0.5">
+      <nav className="flex-1 px-2 py-2 space-y-0.5 overflow-y-auto">
         {navItems.map(item => {
           if (item.minRole && !hasMinRole(user?.role, item.minRole)) return null;
           return (
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={onClose}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                   isActive
