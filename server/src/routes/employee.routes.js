@@ -7,6 +7,7 @@ import { validate } from '../middleware/validate.middleware.js';
 import { createEmployeeSchema, updateEmployeeSchema } from '../schemas/employee.schema.js';
 import { ok } from '../utils/response.js';
 import { AppError } from '../utils/AppError.js';
+import { logAudit } from '../services/audit.service.js';
 
 const router = Router();
 router.use(authenticate);
@@ -49,6 +50,14 @@ router.post('/', requireRole('ADMIN'), validate(createEmployeeSchema), async (re
       data: { ...rest, password_hash },
       select: { id: true, emp_no: true, name: true, email: true, role: true, production_function: true, zone: true, is_active: true },
     });
+    await logAudit({
+      userId: req.user.id,
+      action: 'EMPLOYEE_CREATED',
+      entity: 'employees',
+      entityId: employee.id,
+      newValue: { emp_no: employee.emp_no, name: employee.name, role: employee.role },
+      ipAddress: req.ip,
+    });
     ok(res, employee, 201);
   } catch (err) { next(err); }
 });
@@ -63,6 +72,17 @@ router.patch('/:id', requireMinRole('FACILITY_MANAGER'), validate(updateEmployee
       where: { id },
       data: req.body,
       select: { id: true, emp_no: true, name: true, email: true, role: true, production_function: true, zone: true, is_active: true },
+    });
+    const action = 'is_active' in req.body
+      ? (req.body.is_active ? 'EMPLOYEE_ACTIVATED' : 'EMPLOYEE_DEACTIVATED')
+      : 'EMPLOYEE_UPDATED';
+    await logAudit({
+      userId: req.user.id,
+      action,
+      entity: 'employees',
+      entityId: id,
+      newValue: { emp_no: employee.emp_no, name: employee.name, ...req.body },
+      ipAddress: req.ip,
     });
     ok(res, employee);
   } catch (err) { next(err); }

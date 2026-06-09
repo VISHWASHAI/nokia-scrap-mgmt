@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createVendorPickupSchema } from '../schemas/vendorPickup.schema.js';
 import { generateVendorInvoiceReport } from '../services/excel.service.js';
+import { logAudit } from '../services/audit.service.js';
 import { ok } from '../utils/response.js';
 
 const router = Router();
@@ -27,6 +28,14 @@ router.post('/', validate(createVendorPickupSchema), async (req, res, next) => {
     const pickup = await prisma.vendorPickup.create({
       data: { ...req.body, date: new Date(req.body.date), created_by: req.user.id },
       include: { creator: { select: { name: true, emp_no: true } } },
+    });
+    await logAudit({
+      userId: req.user.id,
+      action: 'VENDOR_PICKUP_CREATED',
+      entity: 'vendor_pickups',
+      entityId: pickup.id,
+      newValue: { vendor_name: pickup.vendor_name, category: pickup.category },
+      ipAddress: req.ip,
     });
     ok(res, pickup, 201);
   } catch (err) { next(err); }

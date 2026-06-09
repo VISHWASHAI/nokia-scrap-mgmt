@@ -13,6 +13,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import vendorPickupRoutes from './routes/vendorPickup.routes.js';
 import liveRoutes from './routes/live.routes.js';
 import adminExcelRoutes from './routes/adminExcel.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { registerNightlyExportJob } from './jobs/nightlyExport.job.js';
 
@@ -61,6 +62,7 @@ app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/vendor-pickups', vendorPickupRoutes);
 app.use('/api/v1/live', liveRoutes);
 app.use('/api/v1/admin-excel', adminExcelRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
