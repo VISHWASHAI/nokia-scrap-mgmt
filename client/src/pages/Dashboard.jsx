@@ -10,6 +10,7 @@ import { useSummary, useTrends, useCircularity, useLedgerData } from '../hooks/u
 import { fmtNum } from '../utils/formatters.js';
 import { today, weekAgo } from '../utils/dateHelpers.js';
 import MaterialSelect from '../components/MaterialSelect.jsx';
+import { resolveCategories, materialLabel } from '../constants/wasteCategories.js';
 
 const TREND_RANGES = [
   { label: '30 Days',  shortLabel: '30D', days: 30 },
@@ -37,29 +38,33 @@ export default function Dashboard() {
     source: source === 'ALL' ? undefined : source,
   });
 
-  // Daily BAT/SOFT breakdown for a single chosen material category, derived from raw ledger rows
+  // Resolved category list — works for both single categories and sub-group selections
+  const resolvedCategories = useMemo(() => resolveCategories(material), [material]);
+  const matLabel = materialLabel(material);
+
+  // Daily BAT/SOFT breakdown for the chosen material/group, derived from raw ledger rows
   const materialChartData = useMemo(() => {
     if (!material || !ledger?.raw) return [];
     const byDate = {};
     ledger.raw
-      .filter(l => l.category === material)
+      .filter(l => resolvedCategories.includes(l.category))
       .forEach(l => {
         const d = dayjs(l.date).format('YYYY-MM-DD');
         if (!byDate[d]) byDate[d] = { date: d, BAT: 0, SOFT: 0 };
         byDate[d][l.source] = (byDate[d][l.source] || 0) + Number(l.waste_for_day);
       });
     return Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
-  }, [material, ledger]);
+  }, [material, ledger, resolvedCategories]);
 
-  // BAT vs SOFT totals for the chosen material across the selected date range, for the donut
+  // BAT vs SOFT totals for the chosen material/group across the selected date range, for the donut
   const materialSourceSplit = useMemo(() => {
     if (!material || !ledger?.raw) return null;
     const totals = { BAT: 0, SOFT: 0 };
     ledger.raw
-      .filter(l => l.category === material)
+      .filter(l => resolvedCategories.includes(l.category))
       .forEach(l => { totals[l.source] = (totals[l.source] || 0) + Number(l.waste_for_day); });
     return totals;
-  }, [material, ledger]);
+  }, [material, ledger, resolvedCategories]);
 
   return (
     <Layout>
@@ -119,9 +124,9 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-5">
             <div>
-              <h2 className="font-semibold text-gray-900">{material ? `Material Trend — ${material}` : 'Waste by Category'}</h2>
+              <h2 className="font-semibold text-gray-900">{material ? `Material Trend — ${matLabel}` : 'Waste by Category'}</h2>
               <p className="text-xs text-nokia-muted mt-0.5">
-                {material ? 'Daily BAT vs SOFT generation for the selected material' : 'BAT vs SOFT production — grouped by material'}
+                {material ? `Daily BAT vs SOFT generation for "${matLabel}"` : 'BAT vs SOFT production — grouped by material'}
               </p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -151,7 +156,7 @@ export default function Dashboard() {
             </div>
           </div>
           {material
-            ? <MaterialBarChart data={materialChartData} loading={ledgerLoading} materialName={material} />
+            ? <MaterialBarChart data={materialChartData} loading={ledgerLoading} materialName={matLabel} />
             : <WasteBarChart data={ledger?.by_category} loading={ledgerLoading} />}
         </div>
 
@@ -160,9 +165,9 @@ export default function Dashboard() {
           <div className="card lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
               <div>
-                <h2 className="font-semibold text-gray-900">{trendRange.label} Trend{material ? ` — ${material}` : ''}</h2>
+                <h2 className="font-semibold text-gray-900">{trendRange.label} Trend{material ? ` — ${matLabel}` : ''}</h2>
                 <p className="text-xs text-nokia-muted mt-0.5">
-                  {material ? `Daily BAT vs SOFT generation for "${material}"` : 'Daily waste generation — BAT vs SOFT'}
+                  {material ? `Daily BAT vs SOFT generation for "${matLabel}"` : 'Daily waste generation — BAT vs SOFT'}
                 </p>
               </div>
               <div className="inline-flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -187,7 +192,7 @@ export default function Dashboard() {
           <div className="card lg:col-span-2">
             <div className="flex flex-wrap items-start justify-between gap-3 mb-1">
               <div>
-                <h2 className="font-semibold text-gray-900">{material ? `Source Split — ${material}` : 'By Waste Type'}</h2>
+                <h2 className="font-semibold text-gray-900">{material ? `Source Split — ${matLabel}` : 'By Waste Type'}</h2>
                 <p className="text-xs text-nokia-muted mt-0.5">{material ? `${dateFrom} to ${dateTo}` : 'Distribution this week'}</p>
               </div>
             </div>
@@ -198,7 +203,7 @@ export default function Dashboard() {
               data={circularity?.by_type}
               byCategory={circularity?.by_function}
               loading={circLoading || (!!material && ledgerLoading)}
-              materialView={material ? { label: material, totals: materialSourceSplit } : null}
+              materialView={material ? { label: matLabel, totals: materialSourceSplit } : null}
             />
           </div>
         </div>

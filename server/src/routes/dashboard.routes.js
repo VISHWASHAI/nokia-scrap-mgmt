@@ -72,10 +72,12 @@ router.get('/trends', async (req, res, next) => {
   try {
     const days = parseInt(req.query.days) || 30;
     const from = dayjs().subtract(days - 1, 'day').startOf('day').toDate();
-    const category = req.query.category || null;
+    // Accept single ?category= OR repeated ?categories=a&categories=b (sub-group expansion)
+    const cats = [].concat(req.query.categories || req.query.category || []).filter(Boolean);
 
     const where = { date: { gte: from } };
-    if (category) where.category = category;
+    if (cats.length === 1) where.category = cats[0];
+    else if (cats.length > 1) where.category = { in: cats };
 
     const ledger = await prisma.generationDisposalLedger.findMany({
       where,
