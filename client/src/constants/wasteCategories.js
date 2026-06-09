@@ -56,22 +56,35 @@ export const GENERAL_WASTE_SUBGROUPS = {
 // Flat list (for backward compat — same strings, same DB values)
 export const GENERAL_WASTE_CATEGORIES = Object.values(GENERAL_WASTE_SUBGROUPS).flat();
 
-export const HAZARDOUS_CATEGORIES = [
-  '5.1 – Used/Spent Oil',
-  '5.2 – Wastes or Residues',
-  '31.1 – Process Residue & Waste',
-  '33.1 – Empty Barrels/Containers/Liners (contaminated)',
-];
+export const HAZARDOUS_SUBGROUPS = {
+  'Category 5 – Liquid Waste': [
+    '5.1 – Used/Spent Oil',
+    '5.2 – Wastes or Residues',
+  ],
+  'Category 31 – Process Waste': [
+    '31.1 – Process Residue & Waste',
+  ],
+  'Category 33 – Containers': [
+    '33.1 – Empty Barrels/Containers/Liners (contaminated)',
+  ],
+};
 
-export const EWASTE_CATEGORIES = [
-  'Edge Cutting',
-  'PCB With Components',
-  'Blank PCB',
-  'CPU',
-  'Desktop',
-  'Server',
-  'Others',
-];
+export const EWASTE_SUBGROUPS = {
+  'PCB & Components': [
+    'Edge Cutting',
+    'PCB With Components',
+    'Blank PCB',
+  ],
+  'IT Equipment': [
+    'CPU',
+    'Desktop',
+    'Server',
+    'Others',
+  ],
+};
+
+export const HAZARDOUS_CATEGORIES = Object.values(HAZARDOUS_SUBGROUPS).flat();
+export const EWASTE_CATEGORIES = Object.values(EWASTE_SUBGROUPS).flat();
 
 export const ALL_CATEGORIES = [
   ...GENERAL_WASTE_CATEGORIES,

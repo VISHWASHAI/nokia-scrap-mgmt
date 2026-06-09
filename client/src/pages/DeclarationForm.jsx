@@ -7,6 +7,8 @@ import {
   GENERAL_WASTE_CATEGORIES,
   GENERAL_WASTE_SUBGROUPS,
   NESTED_SUBGROUPS,
+  HAZARDOUS_SUBGROUPS,
+  EWASTE_SUBGROUPS,
   HAZARDOUS_CATEGORIES,
   EWASTE_CATEGORIES,
 } from '../constants/wasteCategories.js';
@@ -22,6 +24,13 @@ function buildDefaultRows(categories, waste_type) {
   return categories.map(cat => ({ waste_type, category: cat, pallet_qty: '', weight_kg: '', remarks: '' }));
 }
 
+// Defined at module scope so React never remounts it on parent re-renders
+const PANEL_ACCENT = {
+  general:   { bar: '#0050FF', light: '#EEF3FF', badge: 'bg-blue-100 text-blue-700',   icon: '♻️' },
+  hazardous: { bar: '#F59E0B', light: '#FFFBEB', badge: 'bg-amber-100 text-amber-700', icon: '⚠️' },
+  ewaste:    { bar: '#10B981', light: '#ECFDF5', badge: 'bg-green-100 text-green-700',  icon: '🖥️' },
+};
+
 function CategoryRow({ row, displayIdx, accent, query, updateRow }) {
   const i         = row._orig;
   const hasWeight = row.weight_kg !== '' && Number(row.weight_kg) > 0;
@@ -32,50 +41,39 @@ function CategoryRow({ row, displayIdx, accent, query, updateRow }) {
     : catName;
 
   return (
-    <tr
-      className="transition-colors"
-      style={{ background: hasWeight ? `${accent.bar}08` : displayIdx % 2 === 0 ? '#ffffff' : '#f9fafb' }}
-    >
+    <tr className="transition-colors" style={{ background: hasWeight ? `${accent.bar}08` : displayIdx % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
       <td className="px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <span className="text-xs text-gray-400 font-mono w-5 text-right flex-shrink-0">{i + 1}</span>
           <span className="text-sm font-medium" style={{ color: hasWeight ? accent.bar : '#374151' }}>{highlighted}</span>
-          {hasWeight && (
-            <span className="text-xs font-semibold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: `${accent.bar}18`, color: accent.bar }}>✓</span>
-          )}
+          {hasWeight && <span className="text-xs font-semibold px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: `${accent.bar}18`, color: accent.bar }}>✓</span>}
         </div>
       </td>
       <td className="px-3 py-2 text-center">
-        <input
-          type="number" min="0" step="1"
+        <input type="number" min="0" step="1"
           className="w-24 text-center border rounded-lg px-2 py-1.5 text-sm font-medium transition-all outline-none"
           style={{ borderColor: row.pallet_qty !== '' ? accent.bar : '#E5E7EB', background: row.pallet_qty !== '' ? `${accent.bar}08` : '#fff', color: '#111827' }}
-          placeholder="0"
-          value={row.pallet_qty}
+          placeholder="0" value={row.pallet_qty}
           onChange={e => updateRow(i, 'pallet_qty', e.target.value)}
           onFocus={e => { e.target.style.boxShadow = `0 0 0 3px ${accent.bar}25`; e.target.style.borderColor = accent.bar; }}
           onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = row.pallet_qty !== '' ? accent.bar : '#E5E7EB'; }}
         />
       </td>
       <td className="px-3 py-2 text-center">
-        <input
-          type="number" min="0" step="0.001"
+        <input type="number" min="0" step="0.001"
           className="w-24 text-center border rounded-lg px-2 py-1.5 text-sm font-bold transition-all outline-none"
           style={{ borderColor: hasWeight ? accent.bar : '#E5E7EB', background: hasWeight ? `${accent.bar}12` : '#fff', color: hasWeight ? accent.bar : '#111827' }}
-          placeholder="0.000"
-          value={row.weight_kg}
+          placeholder="0.000" value={row.weight_kg}
           onChange={e => updateRow(i, 'weight_kg', e.target.value)}
           onFocus={e => { e.target.style.boxShadow = `0 0 0 3px ${accent.bar}25`; e.target.style.borderColor = accent.bar; }}
           onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = hasWeight ? accent.bar : '#E5E7EB'; }}
         />
       </td>
       <td className="px-3 py-2">
-        <input
-          type="text"
+        <input type="text"
           className="w-full border rounded-lg px-3 py-1.5 text-sm transition-all outline-none"
           style={{ borderColor: row.remarks ? '#D1D5DB' : '#E5E7EB', background: '#fff', color: '#374151' }}
-          placeholder="Optional remarks…"
-          value={row.remarks}
+          placeholder="Optional remarks…" value={row.remarks}
           onChange={e => updateRow(i, 'remarks', e.target.value)}
           onFocus={e => { e.target.style.boxShadow = `0 0 0 3px ${accent.bar}25`; e.target.style.borderColor = accent.bar; }}
           onBlur={e => { e.target.style.boxShadow = 'none'; e.target.style.borderColor = row.remarks ? '#D1D5DB' : '#E5E7EB'; }}
@@ -85,108 +83,113 @@ function CategoryRow({ row, displayIdx, accent, query, updateRow }) {
   );
 }
 
-function CategoryRowGroup({ groupName, rows, accent, query, updateRow }) {
-  const filledInGroup = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0).length;
-  const nested = NESTED_SUBGROUPS[groupName];
+function MiniTable({ rows, accent, query, updateRow, indent = false }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full">
+        <thead>
+          <tr style={{ background: `${accent.bar}10` }}>
+            <th className={`${indent ? 'pl-8' : 'pl-4'} pr-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-400 w-80`}># Category</th>
+            <th className="px-3 py-2 text-center text-xs font-bold uppercase tracking-wide text-gray-400 w-32">Pallet Qty</th>
+            <th className="px-3 py-2 text-center text-xs font-bold uppercase tracking-wide text-gray-400 w-32">Weight (kg)</th>
+            <th className="px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-gray-400">Remarks</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {rows.map((row, displayIdx) => (
+            <CategoryRow key={row.category} row={row} displayIdx={displayIdx} accent={accent} query={query} updateRow={updateRow} />
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
-  // Build nested segments if this group has Cat I/II/III style sub-groups
-  const nestedSegments = nested
-    ? Object.entries(nested).map(([subName, cats]) => ({
-        subName,
-        rows: rows.filter(r => cats.includes(r.category)),
-      })).filter(s => s.rows.length > 0)
+function SubGroupDropdown({ name, rows, accent, query, updateRow, depth = 0 }) {
+  const filledCount = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0).length;
+  const totalKg     = rows.filter(r => Number(r.weight_kg) > 0).reduce((s, r) => s + Number(r.weight_kg), 0);
+  const [open, setOpen] = useState(false);
+
+  // For Plastics EPR: nested Cat I/II/III dropdowns instead of flat rows
+  const nestedDefs = NESTED_SUBGROUPS[name];
+  const nestedSegments = nestedDefs
+    ? Object.entries(nestedDefs).map(([sub, cats]) => ({ sub, rows: rows.filter(r => cats.includes(r.category)) })).filter(s => s.rows.length > 0)
     : null;
 
+  const pl = depth === 0 ? 'pl-4' : 'pl-8';
+  const bgHeader = depth === 0 ? `${accent.bar}0e` : `${accent.bar}07`;
+  const borderL  = depth > 0 ? `border-l-2` : '';
+  const borderLColor = depth > 0 ? `border-l-[${accent.bar}]` : '';
+
   return (
-    <>
-      <tr style={{ background: `${accent.bar}14`, borderTop: `2px solid ${accent.bar}22` }}>
-        <td colSpan={4} className="px-4 py-1.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: accent.bar }}>{groupName}</span>
-            {filledInGroup > 0 && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: `${accent.bar}20`, color: accent.bar }}>
-                {filledInGroup} filled
-              </span>
-            )}
-          </div>
-        </td>
-      </tr>
-      {nestedSegments
-        ? nestedSegments.map(({ subName, rows: sRows }) => (
-            <NestedSubGroupRows key={subName} subName={subName} rows={sRows} accent={accent} query={query} updateRow={updateRow} />
-          ))
-        : rows.map((row, displayIdx) => (
-            <CategoryRow key={row.category} row={row} displayIdx={displayIdx} accent={accent} query={query} updateRow={updateRow} />
-          ))
-      }
-    </>
+    <div className={`${borderL} ${borderLColor}`} style={depth > 0 ? { borderLeftColor: `${accent.bar}60` } : {}}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className={`w-full flex items-center justify-between ${pl} pr-4 py-2.5 text-left transition-colors hover:brightness-95`}
+        style={{ background: bgHeader, borderBottom: open ? `1px solid ${accent.bar}18` : 'none' }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <svg
+            className="flex-shrink-0 transition-transform duration-200"
+            style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', color: accent.bar }}
+            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 6l6 6-6 6" />
+          </svg>
+          <span className={`font-semibold truncate ${depth === 0 ? 'text-sm text-gray-800' : 'text-xs text-gray-700'}`}>{name}</span>
+          {filledCount > 0 && (
+            <span className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${accent.bar}22`, color: accent.bar }}>
+              {filledCount} filled · {totalKg.toFixed(2)} kg
+            </span>
+          )}
+          {filledCount === 0 && (
+            <span className="flex-shrink-0 text-[10px] text-gray-400">{rows.length} categories</span>
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div style={{ borderBottom: `1px solid ${accent.bar}14` }}>
+          {nestedSegments
+            ? <div className="divide-y" style={{ divideColor: `${accent.bar}14` }}>
+                {nestedSegments.map(({ sub, rows: sRows }) => (
+                  <SubGroupDropdown key={sub} name={sub} rows={sRows} accent={accent} query={query} updateRow={updateRow} depth={depth + 1} />
+                ))}
+              </div>
+            : <MiniTable rows={rows} accent={accent} query={query} updateRow={updateRow} indent={depth > 0} />
+          }
+        </div>
+      )}
+    </div>
   );
 }
-
-function NestedSubGroupRows({ subName, rows, accent, query, updateRow }) {
-  const filledCount = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0).length;
-  return (
-    <>
-      <tr style={{ background: `${accent.bar}08` }}>
-        <td colSpan={4} className="px-6 py-1">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent.bar }} />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{subName}</span>
-            {filledCount > 0 && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: `${accent.bar}18`, color: accent.bar }}>
-                {filledCount} filled
-              </span>
-            )}
-          </div>
-        </td>
-      </tr>
-      {rows.map((row, displayIdx) => (
-        <CategoryRow key={row.category} row={row} displayIdx={displayIdx} accent={accent} query={query} updateRow={updateRow} />
-      ))}
-    </>
-  );
-}
-
-// Defined at module scope so React never remounts it on parent re-renders
-const PANEL_ACCENT = {
-  general:   { bar: '#0050FF', light: '#EEF3FF', badge: 'bg-blue-100 text-blue-700',   icon: '♻️' },
-  hazardous: { bar: '#F59E0B', light: '#FFFBEB', badge: 'bg-amber-100 text-amber-700', icon: '⚠️' },
-  ewaste:    { bar: '#10B981', light: '#ECFDF5', badge: 'bg-green-100 text-green-700',  icon: '🖥️' },
-};
 
 function WasteTable({ rows, setRows, title, panel, isOpen, onToggle, subgroups }) {
   const [search, setSearch] = useState('');
-  const filledRows   = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0);
-  const totalKg      = filledRows.reduce((s, r) => s + Number(r.weight_kg), 0);
-  const accent       = PANEL_ACCENT[panel] || PANEL_ACCENT.general;
-  const query        = search.trim().toLowerCase();
-  const indexedRows  = rows.map((r, i) => ({ ...r, _orig: i }));
-  const visibleRows  = query
-    ? indexedRows.filter(r => r.category.toLowerCase().includes(query))
-    : indexedRows;
+  const filledRows  = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0);
+  const totalKg     = filledRows.reduce((s, r) => s + Number(r.weight_kg), 0);
+  const accent      = PANEL_ACCENT[panel] || PANEL_ACCENT.general;
+  const query       = search.trim().toLowerCase();
+  const indexedRows = rows.map((r, i) => ({ ...r, _orig: i }));
+  const searchRows  = query ? indexedRows.filter(r => r.category.toLowerCase().includes(query)) : [];
 
-  // Build grouped segments when subgroups defined (group headers in table)
-  const groupedSegments = subgroups && !query
+  function updateRow(idx, field, value) {
+    setRows(prev => { const next = [...prev]; next[idx] = { ...next[idx], [field]: value }; return next; });
+  }
+
+  // Build sub-group segments for dropdown view
+  const segments = subgroups
     ? Object.entries(subgroups).map(([groupName, cats]) => ({
         groupName,
         rows: indexedRows.filter(r => cats.includes(r.category)),
       })).filter(g => g.rows.length > 0)
     : null;
 
-  function updateRow(idx, field, value) {
-    setRows(prev => {
-      const next = [...prev];
-      next[idx] = { ...next[idx], [field]: value };
-      return next;
-    });
-  }
-
   return (
     <div className="rounded-xl overflow-hidden bg-white shadow-sm" style={{ border: `1.5px solid ${accent.bar}33` }}>
-      {/* Panel header */}
-      <button
-        type="button"
-        onClick={() => onToggle(panel)}
+      {/* Main panel toggle */}
+      <button type="button" onClick={() => onToggle(panel)}
         className="w-full flex items-center justify-between px-5 py-3.5 transition-colors hover:opacity-90"
         style={{ background: accent.light, borderBottom: isOpen ? `1.5px solid ${accent.bar}22` : 'none' }}
       >
@@ -199,108 +202,68 @@ function WasteTable({ rows, setRows, title, panel, isOpen, onToggle, subgroups }
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400 font-medium">{isOpen ? 'Collapse ▲' : 'Expand ▼'}</span>
-        </div>
+        <span className="text-xs text-gray-400 font-medium">{isOpen ? 'Collapse ▲' : 'Expand ▼'}</span>
       </button>
 
       {isOpen && (
         <>
-        {/* Search bar */}
-        <div className="px-4 py-3 border-b border-gray-100" style={{ background: accent.light }}>
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: accent.bar }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
-            </svg>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={`Search in ${title}…`}
-              className="w-full pl-9 pr-9 py-2 text-sm rounded-lg border bg-white outline-none transition-all"
-              style={{ borderColor: search ? accent.bar : '#E5E7EB', boxShadow: search ? `0 0 0 3px ${accent.bar}20` : 'none' }}
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
-              >×</button>
+          {/* Search bar */}
+          <div className="px-4 py-3 border-b border-gray-100" style={{ background: accent.light }}>
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: accent.bar }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+              </svg>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder={`Search in ${title}…`}
+                className="w-full pl-9 pr-9 py-2 text-sm rounded-lg border bg-white outline-none transition-all"
+                style={{ borderColor: search ? accent.bar : '#E5E7EB', boxShadow: search ? `0 0 0 3px ${accent.bar}20` : 'none' }}
+              />
+              {search && (
+                <button type="button" onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+              )}
+            </div>
+            {query && (
+              <p className="text-xs mt-1.5" style={{ color: accent.bar }}>
+                {searchRows.length} of {rows.length} categories match
+                {filledRows.filter(r => r.category.toLowerCase().includes(query)).length > 0 &&
+                  ` · ${filledRows.filter(r => r.category.toLowerCase().includes(query)).length} with data`}
+              </p>
             )}
           </div>
+
+          {/* Search results: flat table */}
           {query && (
-            <p className="text-xs mt-1.5" style={{ color: accent.bar }}>
-              {visibleRows.length} of {rows.length} categories match
-              {filledRows.filter(r => r.category.toLowerCase().includes(query)).length > 0 &&
-                ` · ${filledRows.filter(r => r.category.toLowerCase().includes(query)).length} with data`}
-            </p>
+            searchRows.length === 0
+              ? <div className="flex flex-col items-center gap-2 text-gray-400 py-10">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+                  </svg>
+                  <p className="text-sm font-medium">No categories match "<span className="font-semibold">{search}</span>"</p>
+                  <button type="button" onClick={() => setSearch('')} className="text-xs underline" style={{ color: accent.bar }}>Clear search</button>
+                </div>
+              : <MiniTable rows={searchRows} accent={accent} query={query} updateRow={updateRow} />
           )}
-        </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            {/* Column headers */}
-            <thead>
-              <tr style={{ background: `${accent.bar}12` }}>
-                <th className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-500 w-80">#  Category</th>
-                <th className="px-3 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-gray-500 w-32">Pallet Qty</th>
-                <th className="px-3 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-gray-500 w-32">Weight (kg)</th>
-                <th className="px-3 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-gray-500">Remarks</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {visibleRows.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-10 text-center">
-                    <div className="flex flex-col items-center gap-2 text-gray-400">
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
-                      </svg>
-                      <p className="text-sm font-medium">No categories match "<span className="font-semibold">{search}</span>"</p>
-                      <button type="button" onClick={() => setSearch('')} className="text-xs underline" style={{ color: accent.bar }}>Clear search</button>
-                    </div>
-                  </td>
-                </tr>
-              ) : groupedSegments
-                ? groupedSegments.map(({ groupName, rows: gRows }) => (
-                    <CategoryRowGroup
-                      key={groupName}
-                      groupName={groupName}
-                      rows={gRows}
-                      accent={accent}
-                      query={query}
-                      updateRow={updateRow}
-                    />
-                  ))
-                : visibleRows.map((row, displayIdx) => (
-                    <CategoryRow
-                      key={row.category}
-                      row={row}
-                      displayIdx={displayIdx}
-                      accent={accent}
-                      query={query}
-                      updateRow={updateRow}
-                    />
-                  ))
-              }
-            </tbody>
+          {/* Sub-group dropdowns (no search active) */}
+          {!query && segments && (
+            <div className="divide-y divide-gray-100">
+              {segments.map(({ groupName, rows: gRows }) => (
+                <SubGroupDropdown key={groupName} name={groupName} rows={gRows} accent={accent} query={query} updateRow={updateRow} depth={0} />
+              ))}
+            </div>
+          )}
 
-            {/* Footer total */}
-            {filledRows.length > 0 && (
-              <tfoot>
-                <tr style={{ background: `${accent.bar}10`, borderTop: `2px solid ${accent.bar}30` }}>
-                  <td className="px-4 py-2.5 text-xs font-bold text-gray-600" colSpan={2}>
-                    {filledRows.length} of {rows.length} categories filled
-                  </td>
-                  <td className="px-3 py-2.5 text-center text-sm font-bold" style={{ color: accent.bar }}>
-                    {totalKg.toFixed(3)} kg
-                  </td>
-                  <td />
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        </div>
+          {/* No subgroups: flat table */}
+          {!query && !segments && <MiniTable rows={indexedRows} accent={accent} query={query} updateRow={updateRow} />}
+
+          {/* Footer */}
+          {filledRows.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-2.5" style={{ background: `${accent.bar}10`, borderTop: `2px solid ${accent.bar}30` }}>
+              <span className="text-xs font-bold text-gray-600">{filledRows.length} of {rows.length} categories filled</span>
+              <span className="text-sm font-bold" style={{ color: accent.bar }}>{totalKg.toFixed(3)} kg total</span>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -513,11 +476,13 @@ export default function DeclarationForm() {
           rows={hazardousRows} setRows={setHazardousRows}
           title="Hazardous Waste" panel="hazardous"
           isOpen={openPanels.hazardous} onToggle={togglePanel}
+          subgroups={HAZARDOUS_SUBGROUPS}
         />
         <WasteTable
           rows={ewasteRows} setRows={setEwasteRows}
           title="E-Waste" panel="ewaste"
           isOpen={openPanels.ewaste} onToggle={togglePanel}
+          subgroups={EWASTE_SUBGROUPS}
         />
 
         {/* Approval chain preview */}
