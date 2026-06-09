@@ -6,6 +6,7 @@ import { createDeclaration, updateDeclaration, submitDeclaration, getDeclaration
 import {
   GENERAL_WASTE_CATEGORIES,
   GENERAL_WASTE_SUBGROUPS,
+  NESTED_SUBGROUPS,
   HAZARDOUS_CATEGORIES,
   EWASTE_CATEGORIES,
 } from '../constants/wasteCategories.js';
@@ -86,6 +87,16 @@ function CategoryRow({ row, displayIdx, accent, query, updateRow }) {
 
 function CategoryRowGroup({ groupName, rows, accent, query, updateRow }) {
   const filledInGroup = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0).length;
+  const nested = NESTED_SUBGROUPS[groupName];
+
+  // Build nested segments if this group has Cat I/II/III style sub-groups
+  const nestedSegments = nested
+    ? Object.entries(nested).map(([subName, cats]) => ({
+        subName,
+        rows: rows.filter(r => cats.includes(r.category)),
+      })).filter(s => s.rows.length > 0)
+    : null;
+
   return (
     <>
       <tr style={{ background: `${accent.bar}14`, borderTop: `2px solid ${accent.bar}22` }}>
@@ -95,6 +106,35 @@ function CategoryRowGroup({ groupName, rows, accent, query, updateRow }) {
             {filledInGroup > 0 && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: `${accent.bar}20`, color: accent.bar }}>
                 {filledInGroup} filled
+              </span>
+            )}
+          </div>
+        </td>
+      </tr>
+      {nestedSegments
+        ? nestedSegments.map(({ subName, rows: sRows }) => (
+            <NestedSubGroupRows key={subName} subName={subName} rows={sRows} accent={accent} query={query} updateRow={updateRow} />
+          ))
+        : rows.map((row, displayIdx) => (
+            <CategoryRow key={row.category} row={row} displayIdx={displayIdx} accent={accent} query={query} updateRow={updateRow} />
+          ))
+      }
+    </>
+  );
+}
+
+function NestedSubGroupRows({ subName, rows, accent, query, updateRow }) {
+  const filledCount = rows.filter(r => r.weight_kg !== '' && Number(r.weight_kg) > 0).length;
+  return (
+    <>
+      <tr style={{ background: `${accent.bar}08` }}>
+        <td colSpan={4} className="px-6 py-1">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent.bar }} />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">{subName}</span>
+            {filledCount > 0 && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: `${accent.bar}18`, color: accent.bar }}>
+                {filledCount} filled
               </span>
             )}
           </div>

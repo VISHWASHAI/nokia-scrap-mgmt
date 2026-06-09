@@ -79,6 +79,34 @@ export const ALL_CATEGORIES = [
   ...EWASTE_CATEGORIES,
 ];
 
+// ─── Nested sub-groups within a top-level group (e.g. Cat I/II/III inside Plastics EPR) ───
+export const NESTED_SUBGROUPS = {
+  'Plastics EPR': {
+    'Cat I – Rigid Plastic': [
+      'Cat I – Rigid Plastic (Spool/Wheel Scrap)',
+      'Cat I – Rigid Plastic (Strips)',
+      'Cat I – Rigid Plastic (Seal Caps)',
+      'Cat I – Rigid Plastic (Damaged Pallet)',
+    ],
+    'Cat II – Flexible': [
+      'Cat II – Flexible (Foam)',
+      'Cat II – Flexible (Component Feeder Waste)',
+      'Cat II – Flexible (Reels)',
+      'Cat II – Flexible (Packaging Cover)',
+      'Cat II – Flexible (Bubble Wrap)',
+      'Cat II – Flexible (Tape)',
+      'Cat II – Flexible (Plastic Tray/PET)',
+    ],
+    'Cat III – Multilayer': [
+      'Cat III – Multilayer (Foam+Plastic Sheet Pallet)',
+      'Cat III – Multilayer (ESD Covers)',
+      'Cat III – Multilayer (Slicing Tape)',
+      'Cat III – Multilayer (Anti-static Bags)',
+      'Cat III – Multilayer (Thermocol)',
+    ],
+  },
+};
+
 // ─── Group prefix used for sub-group selections ────────────────────────────
 export const GROUP_PREFIX = 'grp:';
 
