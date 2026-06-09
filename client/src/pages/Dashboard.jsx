@@ -10,7 +10,10 @@ import { useSummary, useTrends, useCircularity, useLedgerData } from '../hooks/u
 import { fmtNum } from '../utils/formatters.js';
 import { today, weekAgo } from '../utils/dateHelpers.js';
 import MaterialSelect from '../components/MaterialSelect.jsx';
-import { resolveCategories, materialLabel } from '../constants/wasteCategories.js';
+import {
+  resolveCategories, materialLabel,
+  GENERAL_WASTE_SUBGROUPS, HAZARDOUS_CATEGORIES, EWASTE_CATEGORIES, GROUP_PREFIX,
+} from '../constants/wasteCategories.js';
 
 const TREND_RANGES = [
   { label: '30 Days',  shortLabel: '30D', days: 30 },
@@ -65,6 +68,40 @@ export default function Dashboard() {
       .forEach(l => { totals[l.source] = (totals[l.source] || 0) + Number(l.waste_for_day); });
     return totals;
   }, [material, ledger, resolvedCategories]);
+
+  // No filter: aggregate by_category into sub-group totals for the top-level view
+  const subgroupChartData = useMemo(() => {
+    if (!ledger?.by_category) return [];
+    const rows = ledger.by_category;
+    const result = [];
+
+    for (const [group, cats] of Object.entries(GENERAL_WASTE_SUBGROUPS)) {
+      const matched = rows.filter(r => cats.includes(r.category));
+      const BAT  = matched.reduce((s, r) => s + Number(r.BAT  || 0), 0);
+      const SOFT = matched.reduce((s, r) => s + Number(r.SOFT || 0), 0);
+      if (BAT > 0 || SOFT > 0) result.push({ category: group, BAT, SOFT });
+    }
+
+    const hazMatched = rows.filter(r => HAZARDOUS_CATEGORIES.includes(r.category));
+    const hazBAT  = hazMatched.reduce((s, r) => s + Number(r.BAT  || 0), 0);
+    const hazSOFT = hazMatched.reduce((s, r) => s + Number(r.SOFT || 0), 0);
+    if (hazBAT > 0 || hazSOFT > 0) result.push({ category: 'Hazardous', BAT: hazBAT, SOFT: hazSOFT });
+
+    const ewMatched = rows.filter(r => EWASTE_CATEGORIES.includes(r.category));
+    const ewBAT  = ewMatched.reduce((s, r) => s + Number(r.BAT  || 0), 0);
+    const ewSOFT = ewMatched.reduce((s, r) => s + Number(r.SOFT || 0), 0);
+    if (ewBAT > 0 || ewSOFT > 0) result.push({ category: 'E-Waste', BAT: ewBAT, SOFT: ewSOFT });
+
+    return result;
+  }, [ledger]);
+
+  // Group selected: show individual categories within that group (per-category bars, not timeline)
+  const groupCategoryData = useMemo(() => {
+    if (!material?.startsWith(GROUP_PREFIX) || !ledger?.by_category) return [];
+    return ledger.by_category.filter(r => resolvedCategories.includes(r.category));
+  }, [material, ledger, resolvedCategories]);
+
+  const isGroup = material.startsWith(GROUP_PREFIX);
 
   return (
     <Layout>
@@ -124,9 +161,19 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mb-4 sm:mb-5">
             <div>
-              <h2 className="font-semibold text-gray-900">{material ? `Material Trend — ${matLabel}` : 'Waste by Category'}</h2>
+              <h2 className="font-semibold text-gray-900">
+                {!material
+                  ? 'Waste by Sub-division'
+                  : isGroup
+                    ? `${matLabel} — by Category`
+                    : `Material Trend — ${matLabel}`}
+              </h2>
               <p className="text-xs text-nokia-muted mt-0.5">
-                {material ? `Daily BAT vs SOFT generation for "${matLabel}"` : 'BAT vs SOFT production — grouped by material'}
+                {!material
+                  ? 'BAT vs SOFT — grouped by sub-division'
+                  : isGroup
+                    ? `Individual categories within "${matLabel}"`
+                    : `Daily BAT vs SOFT generation for "${matLabel}"`}
               </p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -155,9 +202,11 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-          {material
-            ? <MaterialBarChart data={materialChartData} loading={ledgerLoading} materialName={matLabel} />
-            : <WasteBarChart data={ledger?.by_category} loading={ledgerLoading} />}
+          {!material
+            ? <WasteBarChart data={subgroupChartData} loading={ledgerLoading} />
+            : isGroup
+              ? <WasteBarChart data={groupCategoryData} loading={ledgerLoading} />
+              : <MaterialBarChart data={materialChartData} loading={ledgerLoading} materialName={matLabel} />}
         </div>
 
         {/* Trend + Donut */}
