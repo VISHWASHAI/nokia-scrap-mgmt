@@ -13,8 +13,7 @@ import {
   EWASTE_CATEGORIES,
 } from '../constants/wasteCategories.js';
 import { today } from '../utils/dateHelpers.js';
-
-const PRODUCTION_FUNCTIONS = ['SMT', 'MFT', 'REPAIR', 'RFM', 'FILTER', 'SQ'];
+import { PRODUCTION_FUNCTION_GROUPS, PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 
 function sourceFromFunction(fn) {
   return ['SMT', 'MFT'].includes(fn) ? 'BAT' : 'SOFT';
@@ -445,9 +444,13 @@ export default function DeclarationForm() {
               <input type="text" className="form-input" placeholder="e.g. ZONE-A" value={header.zone} onChange={e => setHeader(h => ({ ...h, zone: e.target.value }))} required />
             </div>
             <div>
-              <label className="form-label">Production Function *</label>
+              <label className="form-label">Function *</label>
               <select className="form-select" value={header.production_function} onChange={e => setHeader(h => ({ ...h, production_function: e.target.value }))}>
-                {PRODUCTION_FUNCTIONS.map(f => <option key={f}>{f}</option>)}
+                {PRODUCTION_FUNCTION_GROUPS.map(group => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <div>

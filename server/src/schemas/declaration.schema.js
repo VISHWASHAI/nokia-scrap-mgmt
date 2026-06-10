@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PRODUCTION_FUNCTIONS } from '../constants/productionFunctions.js';
 
 const lineItemSchema = z.object({
   waste_type: z.enum(['GENERAL', 'HAZARDOUS', 'EWASTE']),
@@ -13,7 +14,7 @@ export const createDeclarationSchema = z.object({
   shift: z.enum(['A', 'B', 'C', 'G']),
   time: z.string().min(1),
   zone: z.string().min(1),
-  production_function: z.enum(['SMT', 'MFT', 'REPAIR', 'RFM', 'FILTER', 'SQ']),
+  production_function: z.enum(PRODUCTION_FUNCTIONS),
   description: z.string().optional(),
   reference_no: z.string().optional(),
   line_items: z.array(lineItemSchema).min(1),

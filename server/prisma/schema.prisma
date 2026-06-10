@@ -26,6 +26,18 @@ enum ProductionFunction {
   RFM
   FILTER
   SQ
+  IE
+  TE
+  SMT_ENGINEERING
+  MES
+  WAREHOUSE
+  MATERIAL_CONTROL
+  PDM
+  OIP
+  PME
+  SQA
+  IREP
+  GLOBAL_IT
 }
 
 enum Shift {

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import StatusBadge from './StatusBadge.jsx';
 import { formatDate } from '../utils/dateHelpers.js';
 import { fmtKg } from '../utils/formatters.js';
+import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 
 export default function DeclarationTable({ items = [], loading, emptyText = 'No declarations found.' }) {
   if (loading) return (
@@ -33,7 +34,7 @@ export default function DeclarationTable({ items = [], loading, emptyText = 'No 
               <td className="table-cell font-mono text-xs">{d.declaration_no}</td>
               <td className="table-cell">{formatDate(d.date)}</td>
               <td className="table-cell">{d.zone}</td>
-              <td className="table-cell">{d.production_function}</td>
+              <td className="table-cell">{PRODUCTION_FUNCTION_LABELS[d.production_function] || d.production_function}</td>
               <td className="table-cell">
                 <span className={`font-semibold text-xs ${d.source === 'BAT' ? 'text-nokia-blue' : 'text-nokia-teal'}`}>
                   {d.source}

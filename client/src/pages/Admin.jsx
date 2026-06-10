@@ -4,6 +4,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import api from '../services/api.js';
 import { ROLE_LABELS } from '../constants/roles.js';
+import { PRODUCTION_FUNCTION_GROUPS, PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 import { formatDate, today, weekAgo } from '../utils/dateHelpers.js';
 import dayjs from 'dayjs';
 
@@ -104,7 +105,11 @@ function EmployeeModal({ onClose, onSave }) {
               <label className="form-label">Function</label>
               <select className="form-select" value={form.production_function} onChange={e => set('production_function', e.target.value)}>
                 <option value="">— None —</option>
-                {['SMT', 'MFT', 'REPAIR', 'RFM', 'FILTER', 'SQ'].map(f => <option key={f}>{f}</option>)}
+                {PRODUCTION_FUNCTION_GROUPS.map(group => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <div><label className="form-label">Zone</label><input className="form-input" value={form.zone} onChange={e => set('zone', e.target.value)} /></div>
@@ -187,7 +192,7 @@ function EmployeesTab() {
                   <td className="table-cell font-medium">{emp.name}</td>
                   <td className="table-cell text-xs">{emp.email}</td>
                   <td className="table-cell text-xs">{ROLE_LABELS[emp.role]}</td>
-                  <td className="table-cell text-xs">{emp.production_function || '—'}</td>
+                  <td className="table-cell text-xs">{PRODUCTION_FUNCTION_LABELS[emp.production_function] || emp.production_function || '—'}</td>
                   <td className="table-cell text-xs">{emp.zone || '—'}</td>
                   <td className="table-cell">
                     <span className={`text-xs font-semibold ${emp.is_active ? 'text-green-600' : 'text-red-500'}`}>

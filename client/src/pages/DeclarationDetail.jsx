@@ -8,6 +8,7 @@ import ErrorAlert from '../components/ErrorAlert.jsx';
 import { useDeclaration } from '../hooks/useDeclarations.js';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { approveDeclaration, submitDeclaration, downloadExcel } from '../services/declarations.js';
+import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 import { hasMinRole } from '../constants/roles.js';
 import { formatDate, formatDateTime } from '../utils/dateHelpers.js';
 import { fmtKg } from '../utils/formatters.js';
@@ -100,7 +101,7 @@ export default function DeclarationDetail() {
         <div className="card grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div><p className="text-gray-500 text-xs">Declared By</p><p className="font-medium">{decl.employee?.name} ({decl.employee?.emp_no})</p></div>
           <div><p className="text-gray-500 text-xs">Zone</p><p className="font-medium">{decl.zone}</p></div>
-          <div><p className="text-gray-500 text-xs">Function</p><p className="font-medium">{decl.production_function}</p></div>
+          <div><p className="text-gray-500 text-xs">Function</p><p className="font-medium">{PRODUCTION_FUNCTION_LABELS[decl.production_function] || decl.production_function}</p></div>
           <div><p className="text-gray-500 text-xs">Source</p><p className={`font-semibold ${decl.source === 'BAT' ? 'text-nokia-blue' : 'text-nokia-teal'}`}>{decl.source}</p></div>
           <div><p className="text-gray-500 text-xs">Reference No</p><p className="font-medium">{decl.reference_no || '—'}</p></div>
           <div><p className="text-gray-500 text-xs">Total Weight</p><p className="font-semibold text-nokia-blue">{fmtKg(totalWeight)}</p></div>
