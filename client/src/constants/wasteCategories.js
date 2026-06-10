@@ -74,8 +74,6 @@ export const EWASTE_SUBGROUPS = {
     'Edge Cutting',
     'PCB With Components',
     'Blank PCB',
-  ],
-  'IT Equipment': [
     'CPU',
     'Desktop',
     'Server',
