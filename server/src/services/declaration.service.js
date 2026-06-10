@@ -15,6 +15,12 @@ async function generateDeclarationNo() {
   return `${prefix}${String(seq).padStart(4, '0')}`;
 }
 
+// Sequential reference number — 000, 001, 002, ... assigned in creation order
+export async function generateReferenceNo() {
+  const count = await prisma.scrapDeclaration.count();
+  return String(count).padStart(3, '0');
+}
+
 const STATUS_FLOW = {
   DRAFT: 'SUBMITTED',
   SUBMITTED: 'ZONE_APPROVED',
@@ -38,6 +44,7 @@ function sourceFromFunction(fn) {
 
 export async function createDeclaration(body, user) {
   const declaration_no = await generateDeclarationNo();
+  const reference_no = await generateReferenceNo();
   const source = sourceFromFunction(body.production_function);
 
   const decl = await prisma.scrapDeclaration.create({
@@ -51,7 +58,8 @@ export async function createDeclaration(body, user) {
       production_function: body.production_function,
       source,
       description: body.description,
-      reference_no: body.reference_no,
+      reference_no,
+      disposal_route: body.disposal_route,
       status: 'DRAFT',
       line_items: {
         create: body.line_items.map(li => ({
@@ -100,7 +108,7 @@ export async function updateDeclaration(id, body, user) {
       production_function: body.production_function,
       source,
       description: body.description,
-      reference_no: body.reference_no,
+      disposal_route: body.disposal_route,
       line_items: {
         create: body.line_items.map(li => ({
           waste_type: li.waste_type,

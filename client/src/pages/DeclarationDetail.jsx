@@ -9,6 +9,7 @@ import { useDeclaration } from '../hooks/useDeclarations.js';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { approveDeclaration, submitDeclaration, downloadExcel } from '../services/declarations.js';
 import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
+import { DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 import { hasMinRole } from '../constants/roles.js';
 import { formatDate, formatDateTime } from '../utils/dateHelpers.js';
 import { fmtKg } from '../utils/formatters.js';
@@ -104,6 +105,7 @@ export default function DeclarationDetail() {
           <div><p className="text-gray-500 text-xs">Function</p><p className="font-medium">{PRODUCTION_FUNCTION_LABELS[decl.production_function] || decl.production_function}</p></div>
           <div><p className="text-gray-500 text-xs">Source</p><p className={`font-semibold ${decl.source === 'BAT' ? 'text-nokia-blue' : 'text-nokia-teal'}`}>{decl.source}</p></div>
           <div><p className="text-gray-500 text-xs">Reference No</p><p className="font-medium">{decl.reference_no || '—'}</p></div>
+          <div><p className="text-gray-500 text-xs">Disposal Route</p><p className={`font-semibold ${decl.disposal_route === 'AUTHORIZED_AGENCY' ? 'text-amber-600' : 'text-emerald-600'}`}>{DISPOSAL_ROUTE_LABELS[decl.disposal_route] || '—'}</p></div>
           <div><p className="text-gray-500 text-xs">Total Weight</p><p className="font-semibold text-nokia-blue">{fmtKg(totalWeight)}</p></div>
           {decl.description && <div className="col-span-full"><p className="text-gray-500 text-xs">Description</p><p className="font-medium">{decl.description}</p></div>}
         </div>

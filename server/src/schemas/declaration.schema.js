@@ -17,6 +17,7 @@ export const createDeclarationSchema = z.object({
   production_function: z.enum(PRODUCTION_FUNCTIONS),
   description: z.string().optional(),
   reference_no: z.string().optional(),
+  disposal_route: z.enum(['CIRCULARITY', 'AUTHORIZED_AGENCY']),
   line_items: z.array(lineItemSchema).min(1),
 });
 

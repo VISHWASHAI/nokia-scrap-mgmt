@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { createDeclaration, updateDeclaration, submitDeclaration, getDeclaration } from '../services/declarations.js';
+import { createDeclaration, updateDeclaration, submitDeclaration, getDeclaration, getNextReferenceNo } from '../services/declarations.js';
 import {
   GENERAL_WASTE_CATEGORIES,
   GENERAL_WASTE_SUBGROUPS,
@@ -12,6 +12,7 @@ import {
   HAZARDOUS_CATEGORIES,
   EWASTE_CATEGORIES,
 } from '../constants/wasteCategories.js';
+import { DISPOSAL_ROUTES, DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 import { today } from '../utils/dateHelpers.js';
 import { PRODUCTION_FUNCTION_GROUPS, PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 
@@ -283,6 +284,7 @@ export default function DeclarationForm() {
     production_function: user?.production_function || 'SMT',
     description: '',
     reference_no: '',
+    disposal_route: '',
   });
 
   const [generalRows, setGeneralRows] = useState(buildDefaultRows(GENERAL_WASTE_CATEGORIES, 'GENERAL'));
@@ -313,6 +315,7 @@ export default function DeclarationForm() {
           production_function: decl.production_function,
           description: decl.description || '',
           reference_no: decl.reference_no || '',
+          disposal_route: decl.disposal_route || '',
         });
 
         // Merge saved line items back into the full category rows
@@ -342,6 +345,14 @@ export default function DeclarationForm() {
       .finally(() => setLoadingDraft(false));
   }, [id, isEdit, navigate]);
 
+  // Pre-fill the auto-generated reference number for new declarations
+  useEffect(() => {
+    if (isEdit) return;
+    getNextReferenceNo()
+      .then(({ reference_no }) => setHeader(h => ({ ...h, reference_no })))
+      .catch(() => {});
+  }, [isEdit]);
+
   const togglePanel = (panel) => setOpenPanels(p => ({ ...p, [panel]: !p[panel] }));
 
   function collectLineItems() {
@@ -360,6 +371,7 @@ export default function DeclarationForm() {
     setError('');
     const line_items = collectLineItems();
     if (!line_items.length) { setError('Enter weight in at least one row.'); return; }
+    if (!header.disposal_route) { setError('Select a disposal route (Circularity or Authorized Agency).'); return; }
     setSaving(true);
     try {
       const decl = isEdit
@@ -375,6 +387,7 @@ export default function DeclarationForm() {
     setError('');
     const line_items = collectLineItems();
     if (!line_items.length) { setError('Enter weight in at least one row before submitting.'); return; }
+    if (!header.disposal_route) { setError('Select a disposal route (Circularity or Authorized Agency).'); return; }
     setSubmitting(true);
     try {
       const decl = isEdit
@@ -462,8 +475,15 @@ export default function DeclarationForm() {
               <input type="text" className="form-input" placeholder="Brief description of waste" value={header.description} onChange={e => setHeader(h => ({ ...h, description: e.target.value }))} />
             </div>
             <div>
-              <label className="form-label">Reference No.</label>
-              <input type="text" className="form-input" placeholder="Internal reference" value={header.reference_no} onChange={e => setHeader(h => ({ ...h, reference_no: e.target.value }))} />
+              <label className="form-label">Reference No. (auto)</label>
+              <input type="text" className="form-input bg-gray-50" readOnly value={header.reference_no} />
+            </div>
+            <div>
+              <label className="form-label">Disposal Route *</label>
+              <select className="form-select" value={header.disposal_route} onChange={e => setHeader(h => ({ ...h, disposal_route: e.target.value }))} required>
+                <option value="" disabled>Select disposal route</option>
+                {DISPOSAL_ROUTES.map(r => <option key={r} value={r}>{DISPOSAL_ROUTE_LABELS[r]}</option>)}
+              </select>
             </div>
           </div>
         </div>

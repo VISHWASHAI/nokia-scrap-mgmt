@@ -10,6 +10,7 @@ import {
   approveDeclaration,
   getDeclarations,
   getDeclarationById,
+  generateReferenceNo,
 } from '../services/declaration.service.js';
 import { generateReport } from '../services/excel.service.js';
 import { ok } from '../utils/response.js';
@@ -28,6 +29,13 @@ router.get('/', async (req, res, next) => {
   try {
     const result = await getDeclarations(req.query, req.user);
     ok(res, result);
+  } catch (err) { next(err); }
+});
+
+router.get('/next-reference', async (req, res, next) => {
+  try {
+    const reference_no = await generateReferenceNo();
+    ok(res, { reference_no });
   } catch (err) { next(err); }
 });
 

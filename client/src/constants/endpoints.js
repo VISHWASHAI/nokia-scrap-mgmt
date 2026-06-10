@@ -7,6 +7,7 @@ export const ENDPOINTS = {
   ME: `${BASE_URL}/employees/me`,
   EMPLOYEES: `${BASE_URL}/employees`,
   DECLARATIONS: `${BASE_URL}/declarations`,
+  DECLARATIONS_NEXT_REFERENCE: `${BASE_URL}/declarations/next-reference`,
   DASHBOARD_SUMMARY: `${BASE_URL}/dashboard/summary`,
   DASHBOARD_LEDGER: `${BASE_URL}/dashboard/ledger`,
   DASHBOARD_TRENDS: `${BASE_URL}/dashboard/trends`,

@@ -74,6 +74,11 @@ enum LedgerSource {
   COMBINED
 }
 
+enum DisposalRoute {
+  CIRCULARITY
+  AUTHORIZED_AGENCY
+}
+
 enum ExportTrigger {
   DECLARATION_COMPLETED
   CRON_NIGHTLY
@@ -121,6 +126,7 @@ model ScrapDeclaration {
   source             WasteSource
   description        String?            @db.Text
   reference_no       String?
+  disposal_route     DisposalRoute      @default(CIRCULARITY)
   status             DeclarationStatus  @default(DRAFT)
 
   zone_manager_id    String?

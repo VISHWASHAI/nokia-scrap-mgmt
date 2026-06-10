@@ -3,6 +3,7 @@ import StatusBadge from './StatusBadge.jsx';
 import { formatDate } from '../utils/dateHelpers.js';
 import { fmtKg } from '../utils/formatters.js';
 import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
+import { DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 
 export default function DeclarationTable({ items = [], loading, emptyText = 'No declarations found.' }) {
   if (loading) return (
@@ -23,7 +24,7 @@ export default function DeclarationTable({ items = [], loading, emptyText = 'No 
       <table className="min-w-[640px] w-full">
         <thead>
           <tr>
-            {['Declaration No', 'Date', 'Zone', 'Function', 'Source', 'Total Weight', 'Status', 'Actions'].map(h => (
+            {['Declaration No', 'Date', 'Zone', 'Function', 'Source', 'Route', 'Total Weight', 'Status', 'Actions'].map(h => (
               <th key={h} className="table-header">{h}</th>
             ))}
           </tr>
@@ -38,6 +39,11 @@ export default function DeclarationTable({ items = [], loading, emptyText = 'No 
               <td className="table-cell">
                 <span className={`font-semibold text-xs ${d.source === 'BAT' ? 'text-nokia-blue' : 'text-nokia-teal'}`}>
                   {d.source}
+                </span>
+              </td>
+              <td className="table-cell">
+                <span className={`text-xs font-medium ${d.disposal_route === 'AUTHORIZED_AGENCY' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  {DISPOSAL_ROUTE_LABELS[d.disposal_route] || '—'}
                 </span>
               </td>
               <td className="table-cell">{fmtKg(totalWeight(d.line_items))}</td>
