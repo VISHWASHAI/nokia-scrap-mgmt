@@ -459,11 +459,14 @@ export default function DeclarationForm() {
             <div>
               <label className="form-label">Function *</label>
               <select className="form-select" value={header.production_function} onChange={e => setHeader(h => ({ ...h, production_function: e.target.value }))}>
-                {PRODUCTION_FUNCTION_GROUPS.map(group => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)}
-                  </optgroup>
-                ))}
+                {PRODUCTION_FUNCTION_GROUPS.map(group => group.flat
+                  ? group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)
+                  : (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)}
+                    </optgroup>
+                  )
+                )}
               </select>
             </div>
             <div>

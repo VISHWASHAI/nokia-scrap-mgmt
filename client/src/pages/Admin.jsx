@@ -105,11 +105,14 @@ function EmployeeModal({ onClose, onSave }) {
               <label className="form-label">Function</label>
               <select className="form-select" value={form.production_function} onChange={e => set('production_function', e.target.value)}>
                 <option value="">— None —</option>
-                {PRODUCTION_FUNCTION_GROUPS.map(group => (
-                  <optgroup key={group.label} label={group.label}>
-                    {group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)}
-                  </optgroup>
-                ))}
+                {PRODUCTION_FUNCTION_GROUPS.map(group => group.flat
+                  ? group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)
+                  : (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.options.map(f => <option key={f} value={f}>{PRODUCTION_FUNCTION_LABELS[f]}</option>)}
+                    </optgroup>
+                  )
+                )}
               </select>
             </div>
             <div><label className="form-label">Zone</label><input className="form-input" value={form.zone} onChange={e => set('zone', e.target.value)} /></div>

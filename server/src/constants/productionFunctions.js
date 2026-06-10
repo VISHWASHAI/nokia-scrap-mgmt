@@ -6,7 +6,7 @@ export const PRODUCTION_FUNCTION_GROUPS = [
   { label: 'Planning', options: ['WAREHOUSE', 'MATERIAL_CONTROL', 'PDM'] },
   { label: 'QA', options: ['OIP', 'PME'] },
   { label: 'MM', options: ['SQA', 'IREP'] },
-  { label: 'IT', options: ['GLOBAL_IT'] },
+  { label: 'IT', options: ['GLOBAL_IT'], flat: true },
 ];
 
 export const PRODUCTION_FUNCTIONS = PRODUCTION_FUNCTION_GROUPS.flatMap(g => g.options);

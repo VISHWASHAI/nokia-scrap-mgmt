@@ -15,7 +15,7 @@ export const PRODUCTION_FUNCTION_LABELS = {
   PME: 'PME',
   SQA: 'SQA',
   IREP: 'IREP',
-  GLOBAL_IT: 'GLOBAL IT',
+  GLOBAL_IT: 'IT/Global IT',
 };
 
 export const PRODUCTION_FUNCTION_GROUPS = [
@@ -24,7 +24,7 @@ export const PRODUCTION_FUNCTION_GROUPS = [
   { label: 'Planning', options: ['WAREHOUSE', 'MATERIAL_CONTROL', 'PDM'] },
   { label: 'QA', options: ['OIP', 'PME'] },
   { label: 'MM', options: ['SQA', 'IREP'] },
-  { label: 'IT', options: ['GLOBAL_IT'] },
+  { label: 'IT', options: ['GLOBAL_IT'], flat: true },
 ];
 
 export const PRODUCTION_FUNCTIONS = PRODUCTION_FUNCTION_GROUPS.flatMap(g => g.options);
