@@ -282,6 +282,7 @@ export default function DeclarationForm() {
     time: new Date().toTimeString().slice(0, 5),
     zone: user?.zone || '',
     production_function: user?.production_function || 'SMT',
+    source: sourceFromFunction(user?.production_function || 'SMT'),
     description: '',
     reference_no: '',
     disposal_route: '',
@@ -313,6 +314,7 @@ export default function DeclarationForm() {
           time: decl.time,
           zone: decl.zone,
           production_function: decl.production_function,
+          source: decl.source || sourceFromFunction(decl.production_function),
           description: decl.description || '',
           reference_no: decl.reference_no || '',
           disposal_route: decl.disposal_route || '',
@@ -470,8 +472,11 @@ export default function DeclarationForm() {
               </select>
             </div>
             <div>
-              <label className="form-label">Source (auto)</label>
-              <input type="text" className="form-input bg-gray-50" readOnly value={sourceFromFunction(header.production_function)} />
+              <label className="form-label">Source</label>
+              <select className="form-select" value={header.source} onChange={e => setHeader(h => ({ ...h, source: e.target.value }))}>
+                <option value="BAT">BAT</option>
+                <option value="SOFT">SOFT</option>
+              </select>
             </div>
             <div className="col-span-2">
               <label className="form-label">Description</label>

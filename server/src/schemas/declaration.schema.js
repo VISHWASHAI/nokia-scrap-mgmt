@@ -15,6 +15,7 @@ export const createDeclarationSchema = z.object({
   time: z.string().min(1),
   zone: z.string().min(1),
   production_function: z.enum(PRODUCTION_FUNCTIONS),
+  source: z.enum(['BAT', 'SOFT']).optional(),
   description: z.string().optional(),
   reference_no: z.string().optional(),
   disposal_route: z.enum(['CIRCULARITY', 'AUTHORIZED_AGENCY']),

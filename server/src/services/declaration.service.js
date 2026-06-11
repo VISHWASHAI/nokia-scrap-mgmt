@@ -45,7 +45,7 @@ function sourceFromFunction(fn) {
 export async function createDeclaration(body, user) {
   const declaration_no = await generateDeclarationNo();
   const reference_no = await generateReferenceNo();
-  const source = sourceFromFunction(body.production_function);
+  const source = body.source || sourceFromFunction(body.production_function);
 
   const decl = await prisma.scrapDeclaration.create({
     data: {
@@ -93,7 +93,7 @@ export async function updateDeclaration(id, body, user) {
     throw new AppError('Cannot edit another user\'s declaration', 403, 'FORBIDDEN');
   }
 
-  const source = sourceFromFunction(body.production_function);
+  const source = body.source || sourceFromFunction(body.production_function);
 
   // Replace all line items and update header atomically
   await prisma.declarationLineItem.deleteMany({ where: { declaration_id: id } });
