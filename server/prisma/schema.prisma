@@ -79,6 +79,14 @@ enum DisposalRoute {
   AUTHORIZED_AGENCY
 }
 
+enum StorageLocation {
+  GENERAL_SCRAP_YARD
+  HAZARDOUS_WASTE_STORAGE
+  EWASTE_STORAGE
+  PLASTICS_STORAGE
+  METALS_STORAGE
+}
+
 enum ExportTrigger {
   DECLARATION_COMPLETED
   CRON_NIGHTLY
@@ -164,6 +172,7 @@ model DeclarationLineItem {
   pallet_qty     Decimal?  @db.Decimal(10, 3)
   weight_kg      Decimal?  @db.Decimal(10, 3)
   remarks        String?   @db.Text
+  storage_location StorageLocation?
 
   declaration    ScrapDeclaration @relation(fields: [declaration_id], references: [id], onDelete: Cascade)
 

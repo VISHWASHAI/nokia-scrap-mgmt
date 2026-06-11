@@ -7,13 +7,14 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import { useDeclaration } from '../hooks/useDeclarations.js';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { approveDeclaration, submitDeclaration, deleteDeclaration, downloadExcel } from '../services/declarations.js';
+import { approveDeclaration, submitDeclaration, deleteDeclaration, updateStorageLocations, downloadExcel } from '../services/declarations.js';
 import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 import { DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
+import { STORAGE_LOCATIONS, STORAGE_LOCATION_LABELS } from '../constants/storageLocations.js';
 import { hasMinRole } from '../constants/roles.js';
 import { formatDate, formatDateTime } from '../utils/dateHelpers.js';
 import { fmtKg } from '../utils/formatters.js';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const APPROVER_FOR = {
   SUBMITTED:          ['ZONE_MANAGER', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
@@ -35,6 +36,32 @@ export default function DeclarationDetail() {
   const canSubmit  = canEdit;
   const canApprove = decl && (APPROVER_FOR[decl.status] || []).includes(user?.role);
   const canDelete  = decl && (decl.employee_id === user?.id || user?.role === 'ADMIN');
+  const canSetStorage = ['IREP', 'ADMIN'].includes(user?.role);
+
+  const [storageEdits, setStorageEdits] = useState({});
+  const [storageSaving, setStorageSaving] = useState(false);
+
+  useEffect(() => {
+    if (!decl) return;
+    const initial = {};
+    for (const li of decl.line_items ?? []) initial[li.id] = li.storage_location || '';
+    setStorageEdits(initial);
+  }, [decl]);
+
+  async function handleSaveStorageLocations() {
+    setActionError('');
+    setStorageSaving(true);
+    try {
+      const items = (decl.line_items ?? []).map(li => ({
+        line_item_id: li.id,
+        storage_location: storageEdits[li.id] || null,
+      }));
+      await updateStorageLocations(decl.id, items);
+      refetch();
+    } catch (err) {
+      setActionError(err.response?.data?.error?.message || 'Failed to save storage locations');
+    } finally { setStorageSaving(false); }
+  }
 
   async function handleApprove() {
     setActionError('');
@@ -149,6 +176,7 @@ export default function DeclarationDetail() {
                       <th className="table-header">Pallets</th>
                       <th className="table-header">Weight (kg)</th>
                       <th className="table-header">Remarks</th>
+                      <th className="table-header">Storage Location</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -158,6 +186,22 @@ export default function DeclarationDetail() {
                         <td className="table-cell">{li.pallet_qty ?? '—'}</td>
                         <td className="table-cell font-medium">{li.weight_kg ?? '—'}</td>
                         <td className="table-cell text-gray-500">{li.remarks || '—'}</td>
+                        <td className="table-cell">
+                          {canSetStorage ? (
+                            <select
+                              className="form-select text-xs py-1 w-auto"
+                              value={storageEdits[li.id] ?? ''}
+                              onChange={e => setStorageEdits(s => ({ ...s, [li.id]: e.target.value }))}
+                            >
+                              <option value="">—</option>
+                              {STORAGE_LOCATIONS.map(loc => (
+                                <option key={loc} value={loc}>{STORAGE_LOCATION_LABELS[loc]}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-gray-500">{STORAGE_LOCATION_LABELS[li.storage_location] || '—'}</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -165,6 +209,13 @@ export default function DeclarationDetail() {
               </div>
             );
           })}
+          {canSetStorage && (
+            <div className="flex justify-end mt-2">
+              <button onClick={handleSaveStorageLocations} disabled={storageSaving} className="btn-secondary text-xs">
+                {storageSaving ? 'Saving…' : 'Save Storage Locations'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

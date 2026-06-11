@@ -2,13 +2,14 @@ import { Router } from 'express';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { requireMinRole } from '../middleware/rbac.middleware.js';
-import { createDeclarationSchema } from '../schemas/declaration.schema.js';
+import { createDeclarationSchema, updateStorageLocationSchema } from '../schemas/declaration.schema.js';
 import {
   createDeclaration,
   updateDeclaration,
   deleteDeclaration,
   submitDeclaration,
   approveDeclaration,
+  updateStorageLocations,
   getDeclarations,
   getDeclarationById,
   generateReferenceNo,
@@ -82,6 +83,13 @@ router.delete('/:id', async (req, res, next) => {
 router.patch('/:id/submit', async (req, res, next) => {
   try {
     const updated = await submitDeclaration(req.params.id, req.user, req.ip);
+    ok(res, updated);
+  } catch (err) { next(err); }
+});
+
+router.patch('/:id/storage-location', validate(updateStorageLocationSchema), async (req, res, next) => {
+  try {
+    const updated = await updateStorageLocations(req.params.id, req.body.items, req.user);
     ok(res, updated);
   } catch (err) { next(err); }
 });

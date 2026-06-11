@@ -17,6 +17,7 @@ const ACTION_META = {
   DECLARATION_DELETED:    { label: 'Deleted declaration', color: 'red'    },
   DECLARATION_SUBMITTED:  { label: 'Submitted declaration', color: 'blue' },
   DECLARATION_APPROVED:   { label: 'Approved declaration', color: 'teal' },
+  STORAGE_LOCATION_UPDATED: { label: 'Updated storage location', color: 'purple' },
   VENDOR_PICKUP_CREATED:  { label: 'Logged vendor pickup', color: 'purple' },
   EMPLOYEE_CREATED:       { label: 'Created employee',    color: 'blue'   },
   EMPLOYEE_UPDATED:       { label: 'Updated employee',    color: 'yellow' },
