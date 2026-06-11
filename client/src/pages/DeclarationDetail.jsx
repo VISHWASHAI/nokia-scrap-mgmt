@@ -34,6 +34,7 @@ export default function DeclarationDetail() {
   const canEdit    = decl?.status === 'DRAFT' && (decl?.employee_id === user?.id || user?.role === 'ADMIN');
   const canSubmit  = canEdit;
   const canApprove = decl && (APPROVER_FOR[decl.status] || []).includes(user?.role);
+  const canDelete  = decl && (decl.employee_id === user?.id || user?.role === 'ADMIN');
 
   async function handleApprove() {
     setActionError('');
@@ -47,7 +48,10 @@ export default function DeclarationDetail() {
   }
 
   async function handleDelete() {
-    if (!window.confirm(`Delete declaration ${decl.declaration_no}? This cannot be undone.`)) return;
+    const warning = decl.status === 'COMPLETED'
+      ? `Delete declaration ${decl.declaration_no}? This is COMPLETED and its ledger entries will also be removed. This cannot be undone.`
+      : `Delete declaration ${decl.declaration_no}? This cannot be undone.`;
+    if (!window.confirm(warning)) return;
     setActionError('');
     setActionLoading(true);
     try {
@@ -164,14 +168,14 @@ export default function DeclarationDetail() {
         </div>
 
         {/* Actions */}
-        {(canEdit || canSubmit || canApprove) && (
+        {(canEdit || canSubmit || canApprove || canDelete) && (
           <div className="flex gap-3 justify-end">
             {canEdit && (
               <button onClick={() => navigate(`/declaration/${id}/edit`)} className="btn-secondary">
                 ✏ Edit Draft
               </button>
             )}
-            {canEdit && (
+            {canDelete && (
               <button onClick={handleDelete} disabled={actionLoading} className="btn-secondary text-red-600 hover:bg-red-50 border-red-200">
                 🗑 Delete
               </button>

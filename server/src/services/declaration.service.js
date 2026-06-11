@@ -136,12 +136,15 @@ export async function updateDeclaration(id, body, user) {
 export async function deleteDeclaration(id, user) {
   const decl = await prisma.scrapDeclaration.findUnique({ where: { id } });
   if (!decl) throw new AppError('Declaration not found', 404, 'NOT_FOUND');
-  if (decl.status !== 'DRAFT') throw new AppError('Only DRAFT declarations can be deleted', 409, 'CONFLICT');
   if (decl.employee_id !== user.id && user.role !== 'ADMIN') {
     throw new AppError('Cannot delete another user\'s declaration', 403, 'FORBIDDEN');
   }
 
-  await prisma.scrapDeclaration.delete({ where: { id } });
+  await prisma.$transaction([
+    prisma.generationDisposalLedger.deleteMany({ where: { declaration_id: id } }),
+    prisma.excelExportLog.deleteMany({ where: { declaration_id: id } }),
+    prisma.scrapDeclaration.delete({ where: { id } }),
+  ]);
 
   await logAudit({
     userId: user.id,
