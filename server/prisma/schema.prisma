@@ -135,6 +135,7 @@ model ScrapDeclaration {
   description        String?            @db.Text
   reference_no       String?
   disposal_route     DisposalRoute      @default(CIRCULARITY)
+  storage_location   StorageLocation?
   status             DeclarationStatus  @default(DRAFT)
 
   zone_manager_id    String?
@@ -172,7 +173,6 @@ model DeclarationLineItem {
   pallet_qty     Decimal?  @db.Decimal(10, 3)
   weight_kg      Decimal?  @db.Decimal(10, 3)
   remarks        String?   @db.Text
-  storage_location StorageLocation?
 
   declaration    ScrapDeclaration @relation(fields: [declaration_id], references: [id], onDelete: Cascade)
 

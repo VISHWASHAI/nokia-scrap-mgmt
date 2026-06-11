@@ -155,34 +155,26 @@ export async function deleteDeclaration(id, user) {
   });
 }
 
-export async function updateStorageLocations(id, items, user) {
+export async function updateStorageLocation(id, storageLocation, user) {
   if (!['IREP', 'ADMIN'].includes(user.role)) {
     throw new AppError('Only IREP or Admin can set storage location', 403, 'FORBIDDEN');
   }
 
-  const decl = await prisma.scrapDeclaration.findUnique({ where: { id }, include: { line_items: true } });
+  const decl = await prisma.scrapDeclaration.findUnique({ where: { id } });
   if (!decl) throw new AppError('Declaration not found', 404, 'NOT_FOUND');
 
-  const validIds = new Set(decl.line_items.map(li => li.id));
-  for (const item of items) {
-    if (!validIds.has(item.line_item_id)) {
-      throw new AppError('Line item does not belong to this declaration', 422, 'VALIDATION_ERROR');
-    }
-  }
-
-  await prisma.$transaction(
-    items.map(item => prisma.declarationLineItem.update({
-      where: { id: item.line_item_id },
-      data: { storage_location: item.storage_location },
-    }))
-  );
+  await prisma.scrapDeclaration.update({
+    where: { id },
+    data: { storage_location: storageLocation },
+  });
 
   await logAudit({
     userId: user.id,
     action: 'STORAGE_LOCATION_UPDATED',
     entity: 'scrap_declarations',
     entityId: id,
-    newValue: { items },
+    oldValue: { storage_location: decl.storage_location },
+    newValue: { storage_location: storageLocation },
   });
 
   return getDeclarationById(id, user);

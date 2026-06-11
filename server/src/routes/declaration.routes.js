@@ -9,7 +9,7 @@ import {
   deleteDeclaration,
   submitDeclaration,
   approveDeclaration,
-  updateStorageLocations,
+  updateStorageLocation,
   getDeclarations,
   getDeclarationById,
   generateReferenceNo,
@@ -89,7 +89,7 @@ router.patch('/:id/submit', async (req, res, next) => {
 
 router.patch('/:id/storage-location', validate(updateStorageLocationSchema), async (req, res, next) => {
   try {
-    const updated = await updateStorageLocations(req.params.id, req.body.items, req.user);
+    const updated = await updateStorageLocation(req.params.id, req.body.storage_location, req.user);
     ok(res, updated);
   } catch (err) { next(err); }
 });

@@ -29,8 +29,5 @@ export const updateDisposalSchema = z.object({
 const STORAGE_LOCATIONS = ['GENERAL_SCRAP_YARD', 'HAZARDOUS_WASTE_STORAGE', 'EWASTE_STORAGE', 'PLASTICS_STORAGE', 'METALS_STORAGE'];
 
 export const updateStorageLocationSchema = z.object({
-  items: z.array(z.object({
-    line_item_id: z.string().uuid(),
-    storage_location: z.enum(STORAGE_LOCATIONS).nullable(),
-  })).min(1),
+  storage_location: z.enum(STORAGE_LOCATIONS).nullable(),
 });

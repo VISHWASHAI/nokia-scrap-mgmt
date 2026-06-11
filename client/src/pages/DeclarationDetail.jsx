@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import { useDeclaration } from '../hooks/useDeclarations.js';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { approveDeclaration, submitDeclaration, deleteDeclaration, updateStorageLocations, downloadExcel } from '../services/declarations.js';
+import { approveDeclaration, submitDeclaration, deleteDeclaration, updateStorageLocation, downloadExcel } from '../services/declarations.js';
 import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 import { DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 import { STORAGE_LOCATIONS, STORAGE_LOCATION_LABELS } from '../constants/storageLocations.js';
@@ -38,28 +38,22 @@ export default function DeclarationDetail() {
   const canDelete  = decl && (decl.employee_id === user?.id || user?.role === 'ADMIN');
   const canSetStorage = ['IREP', 'ADMIN'].includes(user?.role);
 
-  const [storageEdits, setStorageEdits] = useState({});
+  const [storageEdit, setStorageEdit] = useState('');
   const [storageSaving, setStorageSaving] = useState(false);
 
   useEffect(() => {
     if (!decl) return;
-    const initial = {};
-    for (const li of decl.line_items ?? []) initial[li.id] = li.storage_location || '';
-    setStorageEdits(initial);
+    setStorageEdit(decl.storage_location || '');
   }, [decl]);
 
-  async function handleSaveStorageLocations() {
+  async function handleSaveStorageLocation() {
     setActionError('');
     setStorageSaving(true);
     try {
-      const items = (decl.line_items ?? []).map(li => ({
-        line_item_id: li.id,
-        storage_location: storageEdits[li.id] || null,
-      }));
-      await updateStorageLocations(decl.id, items);
+      await updateStorageLocation(decl.id, storageEdit || null);
       refetch();
     } catch (err) {
-      setActionError(err.response?.data?.error?.message || 'Failed to save storage locations');
+      setActionError(err.response?.data?.error?.message || 'Failed to save storage location');
     } finally { setStorageSaving(false); }
   }
 
@@ -151,6 +145,30 @@ export default function DeclarationDetail() {
           <div><p className="text-gray-500 text-xs">Reference No</p><p className="font-medium">{decl.reference_no || '—'}</p></div>
           <div><p className="text-gray-500 text-xs">Disposal Route</p><p className={`font-semibold ${decl.disposal_route === 'AUTHORIZED_AGENCY' ? 'text-amber-600' : 'text-emerald-600'}`}>{DISPOSAL_ROUTE_LABELS[decl.disposal_route] || '—'}</p></div>
           <div><p className="text-gray-500 text-xs">Total Weight</p><p className="font-semibold text-nokia-blue">{fmtKg(totalWeight)}</p></div>
+          <div>
+            <p className="text-gray-500 text-xs">Storage Location</p>
+            {canSetStorage ? (
+              <div className="flex items-center gap-2 mt-0.5">
+                <select
+                  className="form-select text-xs py-1 w-auto"
+                  value={storageEdit}
+                  onChange={e => setStorageEdit(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {STORAGE_LOCATIONS.map(loc => (
+                    <option key={loc} value={loc}>{STORAGE_LOCATION_LABELS[loc]}</option>
+                  ))}
+                </select>
+                {storageEdit !== (decl.storage_location || '') && (
+                  <button onClick={handleSaveStorageLocation} disabled={storageSaving} className="btn-secondary text-xs">
+                    {storageSaving ? 'Saving…' : 'Save'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="font-medium">{STORAGE_LOCATION_LABELS[decl.storage_location] || '—'}</p>
+            )}
+          </div>
           {decl.description && <div className="col-span-full"><p className="text-gray-500 text-xs">Description</p><p className="font-medium">{decl.description}</p></div>}
         </div>
 
@@ -176,7 +194,6 @@ export default function DeclarationDetail() {
                       <th className="table-header">Pallets</th>
                       <th className="table-header">Weight (kg)</th>
                       <th className="table-header">Remarks</th>
-                      <th className="table-header">Storage Location</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -186,22 +203,6 @@ export default function DeclarationDetail() {
                         <td className="table-cell">{li.pallet_qty ?? '—'}</td>
                         <td className="table-cell font-medium">{li.weight_kg ?? '—'}</td>
                         <td className="table-cell text-gray-500">{li.remarks || '—'}</td>
-                        <td className="table-cell">
-                          {canSetStorage ? (
-                            <select
-                              className="form-select text-xs py-1 w-auto"
-                              value={storageEdits[li.id] ?? ''}
-                              onChange={e => setStorageEdits(s => ({ ...s, [li.id]: e.target.value }))}
-                            >
-                              <option value="">—</option>
-                              {STORAGE_LOCATIONS.map(loc => (
-                                <option key={loc} value={loc}>{STORAGE_LOCATION_LABELS[loc]}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="text-gray-500">{STORAGE_LOCATION_LABELS[li.storage_location] || '—'}</span>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -209,13 +210,6 @@ export default function DeclarationDetail() {
               </div>
             );
           })}
-          {canSetStorage && (
-            <div className="flex justify-end mt-2">
-              <button onClick={handleSaveStorageLocations} disabled={storageSaving} className="btn-secondary text-xs">
-                {storageSaving ? 'Saving…' : 'Save Storage Locations'}
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Actions */}
