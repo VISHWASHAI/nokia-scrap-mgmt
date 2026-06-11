@@ -14,6 +14,7 @@ const ACTION_META = {
   LOGOUT:                 { label: 'Signed out',          color: 'gray'   },
   DECLARATION_CREATED:    { label: 'Created declaration', color: 'blue'   },
   DECLARATION_UPDATED:    { label: 'Edited declaration',  color: 'yellow' },
+  DECLARATION_DELETED:    { label: 'Deleted declaration', color: 'red'    },
   DECLARATION_SUBMITTED:  { label: 'Submitted declaration', color: 'blue' },
   DECLARATION_APPROVED:   { label: 'Approved declaration', color: 'teal' },
   VENDOR_PICKUP_CREATED:  { label: 'Logged vendor pickup', color: 'purple' },
@@ -52,6 +53,7 @@ function logDetails(log) {
   }
   if (log.action === 'DECLARATION_SUBMITTED') return 'DRAFT → SUBMITTED';
   if (log.action === 'DECLARATION_UPDATED') return nv?.declaration_no || 'Draft updated';
+  if (log.action === 'DECLARATION_DELETED') return ov?.declaration_no || 'Draft deleted';
   if (log.action === 'VENDOR_PICKUP_CREATED') {
     return nv?.vendor_name ? `${nv.vendor_name}${nv.category ? ` · ${nv.category}` : ''}` : '—';
   }

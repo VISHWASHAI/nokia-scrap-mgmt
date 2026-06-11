@@ -133,6 +133,25 @@ export async function updateDeclaration(id, body, user) {
   return updated;
 }
 
+export async function deleteDeclaration(id, user) {
+  const decl = await prisma.scrapDeclaration.findUnique({ where: { id } });
+  if (!decl) throw new AppError('Declaration not found', 404, 'NOT_FOUND');
+  if (decl.status !== 'DRAFT') throw new AppError('Only DRAFT declarations can be deleted', 409, 'CONFLICT');
+  if (decl.employee_id !== user.id && user.role !== 'ADMIN') {
+    throw new AppError('Cannot delete another user\'s declaration', 403, 'FORBIDDEN');
+  }
+
+  await prisma.scrapDeclaration.delete({ where: { id } });
+
+  await logAudit({
+    userId: user.id,
+    action: 'DECLARATION_DELETED',
+    entity: 'scrap_declarations',
+    entityId: id,
+    oldValue: { declaration_no: decl.declaration_no, status: decl.status },
+  });
+}
+
 export async function submitDeclaration(id, user, ipAddress) {
   const decl = await prisma.scrapDeclaration.findUnique({ where: { id }, include: { line_items: true } });
   if (!decl) throw new AppError('Declaration not found', 404, 'NOT_FOUND');

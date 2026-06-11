@@ -6,6 +6,7 @@ import { createDeclarationSchema } from '../schemas/declaration.schema.js';
 import {
   createDeclaration,
   updateDeclaration,
+  deleteDeclaration,
   submitDeclaration,
   approveDeclaration,
   getDeclarations,
@@ -68,6 +69,13 @@ router.patch('/:id', validate(createDeclarationSchema), async (req, res, next) =
   try {
     const updated = await updateDeclaration(req.params.id, req.body, req.user);
     ok(res, updated);
+  } catch (err) { next(err); }
+});
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    await deleteDeclaration(req.params.id, req.user);
+    ok(res, { deleted: true });
   } catch (err) { next(err); }
 });
 

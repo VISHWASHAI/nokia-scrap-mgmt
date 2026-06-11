@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import { useDeclaration } from '../hooks/useDeclarations.js';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { approveDeclaration, submitDeclaration, downloadExcel } from '../services/declarations.js';
+import { approveDeclaration, submitDeclaration, deleteDeclaration, downloadExcel } from '../services/declarations.js';
 import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 import { DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 import { hasMinRole } from '../constants/roles.js';
@@ -44,6 +44,19 @@ export default function DeclarationDetail() {
     } catch (err) {
       setActionError(err.response?.data?.error?.message || 'Approval failed');
     } finally { setActionLoading(false); }
+  }
+
+  async function handleDelete() {
+    if (!window.confirm(`Delete declaration ${decl.declaration_no}? This cannot be undone.`)) return;
+    setActionError('');
+    setActionLoading(true);
+    try {
+      await deleteDeclaration(decl.id);
+      navigate('/submissions');
+    } catch (err) {
+      setActionError(err.response?.data?.error?.message || 'Delete failed');
+      setActionLoading(false);
+    }
   }
 
   async function handleSubmitAction() {
@@ -156,6 +169,11 @@ export default function DeclarationDetail() {
             {canEdit && (
               <button onClick={() => navigate(`/declaration/${id}/edit`)} className="btn-secondary">
                 ✏ Edit Draft
+              </button>
+            )}
+            {canEdit && (
+              <button onClick={handleDelete} disabled={actionLoading} className="btn-secondary text-red-600 hover:bg-red-50 border-red-200">
+                🗑 Delete
               </button>
             )}
             {canSubmit && (
