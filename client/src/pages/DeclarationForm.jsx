@@ -24,14 +24,14 @@ function buildDefaultRows(categories, waste_type) {
   return categories.map(cat => ({ waste_type, category: cat, pallet_qty: '', weight_kg: '', remarks: '' }));
 }
 
-// SOFT declarations are entered at the main-group level (one row per group);
-// BAT declarations use the full detailed category list.
+// BAT declarations are entered at the main-group level (one row per group);
+// SOFT declarations use the full detailed category list.
 const GENERAL_GROUP_NAMES   = Object.keys(GENERAL_WASTE_SUBGROUPS);
 const HAZARDOUS_GROUP_NAMES = Object.keys(HAZARDOUS_SUBGROUPS);
 const EWASTE_GROUP_NAMES    = Object.keys(EWASTE_SUBGROUPS);
 
 function categoryListFor(source, waste_type) {
-  if (source === 'SOFT') {
+  if (source === 'BAT') {
     return waste_type === 'GENERAL'   ? GENERAL_GROUP_NAMES
          : waste_type === 'HAZARDOUS' ? HAZARDOUS_GROUP_NAMES
          : EWASTE_GROUP_NAMES;
@@ -529,7 +529,7 @@ export default function DeclarationForm() {
           rows={generalRows} setRows={setGeneralRows}
           title="General Waste" panel="general"
           isOpen={openPanels.general} onToggle={togglePanel}
-          subgroups={header.source === 'BAT' ? GENERAL_WASTE_SUBGROUPS : undefined}
+          subgroups={header.source === 'SOFT' ? GENERAL_WASTE_SUBGROUPS : undefined}
         />
         <WasteTable
           rows={hazardousRows} setRows={setHazardousRows}
@@ -540,7 +540,7 @@ export default function DeclarationForm() {
           rows={ewasteRows} setRows={setEwasteRows}
           title="E-Waste" panel="ewaste"
           isOpen={openPanels.ewaste} onToggle={togglePanel}
-          subgroups={header.source === 'BAT' ? EWASTE_SUBGROUPS : undefined}
+          subgroups={header.source === 'SOFT' ? EWASTE_SUBGROUPS : undefined}
         />
 
         {/* Approval chain preview */}
