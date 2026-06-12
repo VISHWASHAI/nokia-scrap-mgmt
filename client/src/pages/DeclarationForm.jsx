@@ -11,7 +11,6 @@ import {
   HAZARDOUS_CATEGORIES,
   EWASTE_CATEGORIES,
 } from '../constants/wasteCategories.js';
-import { DISPOSAL_ROUTES, DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 import { today } from '../utils/dateHelpers.js';
 import { PRODUCTION_FUNCTION_GROUPS, PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 
@@ -308,7 +307,6 @@ export default function DeclarationForm() {
     source: initialSource,
     description: '',
     reference_no: '',
-    disposal_route: '',
   });
 
   const [generalRows, setGeneralRows]     = useState(() => buildDefaultRows(categoryListFor(initialSource, 'GENERAL'), 'GENERAL'));
@@ -340,7 +338,6 @@ export default function DeclarationForm() {
           source: decl.source || sourceFromFunction(decl.production_function),
           description: decl.description || '',
           reference_no: decl.reference_no || '',
-          disposal_route: decl.disposal_route || '',
         });
 
         // Merge saved line items back into the full category rows
@@ -371,13 +368,13 @@ export default function DeclarationForm() {
       .finally(() => setLoadingDraft(false));
   }, [id, isEdit, navigate]);
 
-  // Pre-fill the auto-generated reference number for new declarations
+  // Pre-fill the auto-generated reference number (refreshes when the source changes)
   useEffect(() => {
     if (isEdit) return;
-    getNextReferenceNo()
+    getNextReferenceNo(header.source)
       .then(({ reference_no }) => setHeader(h => ({ ...h, reference_no })))
       .catch(() => {});
-  }, [isEdit]);
+  }, [isEdit, header.source]);
 
   // Rebuild the waste rows when the source toggles (BAT = full categories, SOFT = main groups).
   useEffect(() => {
@@ -405,7 +402,6 @@ export default function DeclarationForm() {
     setError('');
     const line_items = collectLineItems();
     if (!line_items.length) { setError('Enter weight in at least one row.'); return; }
-    if (!header.disposal_route) { setError('Select a disposal route (Circularity or Authorized Agency).'); return; }
     setSaving(true);
     try {
       const decl = isEdit
@@ -421,7 +417,6 @@ export default function DeclarationForm() {
     setError('');
     const line_items = collectLineItems();
     if (!line_items.length) { setError('Enter weight in at least one row before submitting.'); return; }
-    if (!header.disposal_route) { setError('Select a disposal route (Circularity or Authorized Agency).'); return; }
     setSubmitting(true);
     try {
       const decl = isEdit
@@ -518,13 +513,6 @@ export default function DeclarationForm() {
               <label className="form-label">Reference No. (auto)</label>
               <input type="text" className="form-input bg-gray-50" readOnly value={header.reference_no} />
             </div>
-            <div>
-              <label className="form-label">Disposal Route *</label>
-              <select className="form-select" value={header.disposal_route} onChange={e => setHeader(h => ({ ...h, disposal_route: e.target.value }))} required>
-                <option value="" disabled>Select disposal route</option>
-                {DISPOSAL_ROUTES.map(r => <option key={r} value={r}>{DISPOSAL_ROUTE_LABELS[r]}</option>)}
-              </select>
-            </div>
           </div>
         </div>
 
@@ -551,7 +539,7 @@ export default function DeclarationForm() {
         <div className="card">
           <h2 className="font-semibold text-gray-900 mb-4">Approval Chain</h2>
           <div className="flex items-center gap-2 flex-wrap text-sm text-gray-600">
-            {['Declared By', 'Zone Manager', 'Dept Head', 'IREP', 'Security', 'Completed'].map((step, i, arr) => (
+            {['Declared By', 'Dept Head', 'IREP', 'Security', 'Completed'].map((step, i, arr) => (
               <span key={step} className="flex items-center gap-2">
                 <span className="bg-gray-100 border border-gray-200 px-3 py-1 rounded-full text-xs font-medium">{step}</span>
                 {i < arr.length - 1 && <span className="text-gray-300">→</span>}

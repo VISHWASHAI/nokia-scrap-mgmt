@@ -36,7 +36,7 @@ router.get('/', async (req, res, next) => {
 
 router.get('/next-reference', async (req, res, next) => {
   try {
-    const reference_no = await generateReferenceNo();
+    const reference_no = await generateReferenceNo(req.query.source || 'BAT');
     ok(res, { reference_no });
   } catch (err) { next(err); }
 });

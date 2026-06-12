@@ -1,6 +1,6 @@
 import api from './api.js';
 
-export const getNextReferenceNo = () => api.get('/declarations/next-reference').then(r => r.data.data);
+export const getNextReferenceNo = (source) => api.get('/declarations/next-reference', { params: { source } }).then(r => r.data.data);
 export const createDeclaration = (body) => api.post('/declarations', body).then(r => r.data.data);
 export const updateDeclaration = (id, body) => api.patch(`/declarations/${id}`, body).then(r => r.data.data);
 export const deleteDeclaration = (id) => api.delete(`/declarations/${id}`).then(r => r.data.data);

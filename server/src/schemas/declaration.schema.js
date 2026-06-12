@@ -18,7 +18,7 @@ export const createDeclarationSchema = z.object({
   source: z.enum(['BAT', 'SOFT']).optional(),
   description: z.string().optional(),
   reference_no: z.string().optional(),
-  disposal_route: z.enum(['CIRCULARITY', 'AUTHORIZED_AGENCY']),
+  disposal_route: z.enum(['CIRCULARITY', 'AUTHORIZED_AGENCY']).optional(),
   line_items: z.array(lineItemSchema).min(1),
 });
 

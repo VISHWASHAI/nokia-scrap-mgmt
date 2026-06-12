@@ -15,10 +15,10 @@ async function generateDeclarationNo() {
   return `${prefix}${String(seq).padStart(4, '0')}`;
 }
 
-// Sequential reference number — 000, 001, 002, ... assigned in creation order
-export async function generateReferenceNo() {
-  const count = await prisma.scrapDeclaration.count();
-  return String(count).padStart(3, '0');
+// Reference number — "<SOURCE>-NNN", numbered per source (e.g. BAT-001, SOFT-001)
+export async function generateReferenceNo(source = 'BAT') {
+  const count = await prisma.scrapDeclaration.count({ where: { source } });
+  return `${source}-${String(count + 1).padStart(3, '0')}`;
 }
 
 const STATUS_FLOW = {
@@ -40,8 +40,8 @@ function sourceFromFunction(fn) {
 
 export async function createDeclaration(body, user) {
   const declaration_no = await generateDeclarationNo();
-  const reference_no = await generateReferenceNo();
   const source = body.source || sourceFromFunction(body.production_function);
+  const reference_no = await generateReferenceNo(source);
 
   const decl = await prisma.scrapDeclaration.create({
     data: {
