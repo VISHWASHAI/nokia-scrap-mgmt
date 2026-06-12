@@ -3,10 +3,8 @@ import { STATUS_LABELS } from '../constants/statusFlow.js';
 const STATUS_STYLES = {
   DRAFT:               'bg-gray-100 text-gray-600 border-gray-200',
   SUBMITTED:           'bg-blue-50 text-blue-700 border-blue-200',
-  ZONE_APPROVED:       'bg-sky-50 text-sky-700 border-sky-200',
   DEPT_APPROVED:       'bg-cyan-50 text-cyan-700 border-cyan-200',
   IREP_AUTHORIZED:     'bg-indigo-50 text-indigo-700 border-indigo-200',
-  SECURITY_AUTHORIZED: 'bg-violet-50 text-violet-700 border-violet-200',
   COMPLETED:           'bg-green-50 text-green-700 border-green-200',
   REJECTED:            'bg-red-50 text-red-700 border-red-200',
 };
@@ -14,10 +12,8 @@ const STATUS_STYLES = {
 const STATUS_DOTS = {
   DRAFT:               'bg-gray-400',
   SUBMITTED:           'bg-blue-500',
-  ZONE_APPROVED:       'bg-sky-500',
   DEPT_APPROVED:       'bg-cyan-500',
   IREP_AUTHORIZED:     'bg-indigo-500',
-  SECURITY_AUTHORIZED: 'bg-violet-500',
   COMPLETED:           'bg-green-500',
   REJECTED:            'bg-red-500',
 };

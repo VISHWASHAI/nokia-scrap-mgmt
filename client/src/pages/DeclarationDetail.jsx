@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import { useDeclaration } from '../hooks/useDeclarations.js';
 import { useAuth } from '../hooks/useAuth.jsx';
-import { approveDeclaration, submitDeclaration, deleteDeclaration, updateStorageLocation, downloadExcel } from '../services/declarations.js';
+import { approveDeclaration, submitDeclaration, deleteDeclaration, updateStorageLocations, downloadExcel } from '../services/declarations.js';
 import { PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
 import { DISPOSAL_ROUTE_LABELS } from '../constants/disposalRoute.js';
 import { STORAGE_LOCATIONS, STORAGE_LOCATION_LABELS } from '../constants/storageLocations.js';
@@ -17,11 +17,9 @@ import { fmtKg } from '../utils/formatters.js';
 import { useState, useEffect } from 'react';
 
 const APPROVER_FOR = {
-  SUBMITTED:          ['ZONE_MANAGER', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
-  ZONE_APPROVED:      ['DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  SUBMITTED:          ['DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
   DEPT_APPROVED:      ['IREP', 'FACILITY_MANAGER', 'ADMIN'],
   IREP_AUTHORIZED:    ['SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
-  SECURITY_AUTHORIZED:['FACILITY_MANAGER', 'ADMIN'],
 };
 
 export default function DeclarationDetail() {
@@ -38,23 +36,28 @@ export default function DeclarationDetail() {
   const canDelete  = decl && (decl.employee_id === user?.id || user?.role === 'ADMIN');
   const canSetStorage = ['IREP', 'ADMIN'].includes(user?.role);
 
-  const [storageEdit, setStorageEdit] = useState('');
-  const [storageSaving, setStorageSaving] = useState(false);
+  const [storageEdits, setStorageEdits] = useState({});
+  const [storageSavingId, setStorageSavingId] = useState(null);
 
   useEffect(() => {
     if (!decl) return;
-    setStorageEdit(decl.storage_location || '');
+    const initial = {};
+    for (const li of decl.line_items ?? []) initial[li.id] = li.storage_location || '';
+    setStorageEdits(initial);
   }, [decl]);
 
-  async function handleSaveStorageLocation() {
+  // Storage location is compulsory — each selection auto-saves immediately.
+  async function handleStorageChange(lineItemId, value) {
+    setStorageEdits(s => ({ ...s, [lineItemId]: value }));
+    if (!value) return; // empty is not a valid (compulsory) choice — nothing to save
     setActionError('');
-    setStorageSaving(true);
+    setStorageSavingId(lineItemId);
     try {
-      await updateStorageLocation(decl.id, storageEdit || null);
+      await updateStorageLocations(decl.id, [{ line_item_id: lineItemId, storage_location: value }]);
       refetch();
     } catch (err) {
       setActionError(err.response?.data?.error?.message || 'Failed to save storage location');
-    } finally { setStorageSaving(false); }
+    } finally { setStorageSavingId(null); }
   }
 
   async function handleApprove() {
@@ -128,7 +131,7 @@ export default function DeclarationDetail() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <StatusBadge status={decl.status} />
-            {hasMinRole(user?.role, 'ZONE_MANAGER') && (
+            {hasMinRole(user?.role, 'DEPT_HEAD') && (
               <button onClick={handleDownload} className="btn-secondary text-xs">⬇ Excel</button>
             )}
           </div>
@@ -145,30 +148,6 @@ export default function DeclarationDetail() {
           <div><p className="text-gray-500 text-xs">Reference No</p><p className="font-medium">{decl.reference_no || '—'}</p></div>
           <div><p className="text-gray-500 text-xs">Disposal Route</p><p className={`font-semibold ${decl.disposal_route === 'AUTHORIZED_AGENCY' ? 'text-amber-600' : 'text-emerald-600'}`}>{DISPOSAL_ROUTE_LABELS[decl.disposal_route] || '—'}</p></div>
           <div><p className="text-gray-500 text-xs">Total Weight</p><p className="font-semibold text-nokia-blue">{fmtKg(totalWeight)}</p></div>
-          <div>
-            <p className="text-gray-500 text-xs">Storage Location</p>
-            {canSetStorage ? (
-              <div className="flex items-center gap-2 mt-0.5">
-                <select
-                  className="form-select text-xs py-1 w-auto"
-                  value={storageEdit}
-                  onChange={e => setStorageEdit(e.target.value)}
-                >
-                  <option value="">—</option>
-                  {STORAGE_LOCATIONS.map(loc => (
-                    <option key={loc} value={loc}>{STORAGE_LOCATION_LABELS[loc]}</option>
-                  ))}
-                </select>
-                {storageEdit !== (decl.storage_location || '') && (
-                  <button onClick={handleSaveStorageLocation} disabled={storageSaving} className="btn-secondary text-xs">
-                    {storageSaving ? 'Saving…' : 'Save'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="font-medium">{STORAGE_LOCATION_LABELS[decl.storage_location] || '—'}</p>
-            )}
-          </div>
           {decl.description && <div className="col-span-full"><p className="text-gray-500 text-xs">Description</p><p className="font-medium">{decl.description}</p></div>}
         </div>
 
@@ -194,17 +173,43 @@ export default function DeclarationDetail() {
                       <th className="table-header">Pallets</th>
                       <th className="table-header">Weight (kg)</th>
                       <th className="table-header">Remarks</th>
+                      <th className="table-header">Storage Location{canSetStorage && <span className="text-red-500"> *</span>}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((li, i) => (
+                    {rows.map((li, i) => {
+                      const val = storageEdits[li.id] ?? '';
+                      return (
                       <tr key={li.id} className={i % 2 === 1 ? 'bg-gray-50' : ''}>
                         <td className="table-cell">{li.category}</td>
                         <td className="table-cell">{li.pallet_qty ?? '—'}</td>
                         <td className="table-cell font-medium">{li.weight_kg ?? '—'}</td>
                         <td className="table-cell text-gray-500">{li.remarks || '—'}</td>
+                        <td className="table-cell">
+                          {canSetStorage ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                required
+                                className={`form-select text-xs py-1 w-auto ${!val ? 'border-red-300 text-red-600' : ''}`}
+                                value={val}
+                                onChange={e => handleStorageChange(li.id, e.target.value)}
+                              >
+                                <option value="" disabled>Select…</option>
+                                {STORAGE_LOCATIONS.map(loc => (
+                                  <option key={loc} value={loc}>{STORAGE_LOCATION_LABELS[loc]}</option>
+                                ))}
+                              </select>
+                              {storageSavingId === li.id
+                                ? <span className="text-[11px] text-gray-400">Saving…</span>
+                                : !val && <span className="text-[11px] text-red-500">Required</span>}
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">{STORAGE_LOCATION_LABELS[li.storage_location] || '—'}</span>
+                          )}
+                        </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -233,7 +238,7 @@ export default function DeclarationDetail() {
             {canApprove && (
               <button onClick={handleApprove} disabled={actionLoading} className="btn-primary">
                 {actionLoading ? 'Processing…' : `Approve → ${
-                  { SUBMITTED: 'Zone Approve', ZONE_APPROVED: 'Dept Approve', DEPT_APPROVED: 'IREP Authorize', IREP_AUTHORIZED: 'Security Authorize', SECURITY_AUTHORIZED: 'Complete' }[decl.status]
+                  { SUBMITTED: 'Dept Approve', DEPT_APPROVED: 'IREP Authorize', IREP_AUTHORIZED: 'Security Authorize & Complete' }[decl.status]
                 }`}
               </button>
             )}

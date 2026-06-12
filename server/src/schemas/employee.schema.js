@@ -6,7 +6,7 @@ export const createEmployeeSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(['EMPLOYEE', 'ZONE_MANAGER', 'DEPT_HEAD', 'FACILITY_MANAGER', 'ADMIN']),
+  role: z.enum(['EMPLOYEE', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN']),
   production_function: z.enum(PRODUCTION_FUNCTIONS).optional(),
   zone: z.string().optional(),
 });
@@ -14,7 +14,7 @@ export const createEmployeeSchema = z.object({
 export const updateEmployeeSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
-  role: z.enum(['EMPLOYEE', 'ZONE_MANAGER', 'DEPT_HEAD', 'FACILITY_MANAGER', 'ADMIN']).optional(),
+  role: z.enum(['EMPLOYEE', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN']).optional(),
   production_function: z.enum(PRODUCTION_FUNCTIONS).optional().nullable(),
   zone: z.string().optional().nullable(),
   is_active: z.boolean().optional(),

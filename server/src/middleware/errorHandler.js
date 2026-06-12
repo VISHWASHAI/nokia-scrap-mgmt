@@ -8,6 +8,12 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Multer upload errors (e.g. file too large)
+  if (err.name === 'MulterError') {
+    const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File too large (max 10 MB)' : err.message;
+    return res.status(422).json({ success: false, error: { message: msg, code: 'UPLOAD_ERROR' } });
+  }
+
   // Prisma known errors
   if (err.code === 'P2002') {
     return res.status(409).json({

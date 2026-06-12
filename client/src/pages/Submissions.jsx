@@ -44,7 +44,7 @@ export default function Submissions() {
             <label className="form-label">Status</label>
             <select className="form-select w-auto" value={filters.status} onChange={e => applyFilters({ status: e.target.value })}>
               <option value="">All</option>
-              {['DRAFT', 'SUBMITTED', 'ZONE_APPROVED', 'DEPT_APPROVED', 'IREP_AUTHORIZED', 'SECURITY_AUTHORIZED', 'COMPLETED'].map(s => (
+              {['DRAFT', 'SUBMITTED', 'DEPT_APPROVED', 'IREP_AUTHORIZED', 'COMPLETED'].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>

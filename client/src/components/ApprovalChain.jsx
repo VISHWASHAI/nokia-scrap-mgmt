@@ -3,11 +3,9 @@ import { formatDateTime } from '../utils/dateHelpers.js';
 
 const stepConfig = [
   { status: 'SUBMITTED', label: 'Declared', key: 'employee', tsKey: 'created_at' },
-  { status: 'ZONE_APPROVED', label: 'Zone Approved', key: 'zone_manager', tsKey: 'zone_approved_at' },
   { status: 'DEPT_APPROVED', label: 'Dept Approved', key: 'dept_head', tsKey: 'dept_approved_at' },
   { status: 'IREP_AUTHORIZED', label: 'IREP Auth', key: 'irep_authorizer', tsKey: 'irep_authorized_at' },
-  { status: 'SECURITY_AUTHORIZED', label: 'Security Auth', key: 'security_authorizer', tsKey: 'security_authorized_at' },
-  { status: 'COMPLETED', label: 'Completed', key: null, tsKey: 'completed_at' },
+  { status: 'COMPLETED', label: 'Security · Completed', key: 'security_authorizer', tsKey: 'completed_at' },
 ];
 
 export default function ApprovalChain({ declaration }) {

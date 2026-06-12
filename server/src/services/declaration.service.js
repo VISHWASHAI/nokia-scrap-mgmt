@@ -23,19 +23,15 @@ export async function generateReferenceNo() {
 
 const STATUS_FLOW = {
   DRAFT: 'SUBMITTED',
-  SUBMITTED: 'ZONE_APPROVED',
-  ZONE_APPROVED: 'DEPT_APPROVED',
+  SUBMITTED: 'DEPT_APPROVED',
   DEPT_APPROVED: 'IREP_AUTHORIZED',
-  IREP_AUTHORIZED: 'SECURITY_AUTHORIZED',
-  SECURITY_AUTHORIZED: 'COMPLETED',
+  IREP_AUTHORIZED: 'COMPLETED',
 };
 
 const APPROVER_ROLE_FOR_STATUS = {
-  SUBMITTED:          ['ZONE_MANAGER', 'DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
-  ZONE_APPROVED:      ['DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
+  SUBMITTED:          ['DEPT_HEAD', 'IREP', 'SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
   DEPT_APPROVED:      ['IREP', 'FACILITY_MANAGER', 'ADMIN'],
   IREP_AUTHORIZED:    ['SECURITY', 'FACILITY_MANAGER', 'ADMIN'],
-  SECURITY_AUTHORIZED:['FACILITY_MANAGER', 'ADMIN'],
 };
 
 function sourceFromFunction(fn) {
@@ -155,26 +151,34 @@ export async function deleteDeclaration(id, user) {
   });
 }
 
-export async function updateStorageLocation(id, storageLocation, user) {
+export async function updateStorageLocations(id, items, user) {
   if (!['IREP', 'ADMIN'].includes(user.role)) {
     throw new AppError('Only IREP or Admin can set storage location', 403, 'FORBIDDEN');
   }
 
-  const decl = await prisma.scrapDeclaration.findUnique({ where: { id } });
+  const decl = await prisma.scrapDeclaration.findUnique({ where: { id }, include: { line_items: true } });
   if (!decl) throw new AppError('Declaration not found', 404, 'NOT_FOUND');
 
-  await prisma.scrapDeclaration.update({
-    where: { id },
-    data: { storage_location: storageLocation },
-  });
+  const validIds = new Set(decl.line_items.map(li => li.id));
+  for (const item of items) {
+    if (!validIds.has(item.line_item_id)) {
+      throw new AppError('Line item does not belong to this declaration', 422, 'VALIDATION_ERROR');
+    }
+  }
+
+  await prisma.$transaction(
+    items.map(item => prisma.declarationLineItem.update({
+      where: { id: item.line_item_id },
+      data: { storage_location: item.storage_location },
+    }))
+  );
 
   await logAudit({
     userId: user.id,
     action: 'STORAGE_LOCATION_UPDATED',
     entity: 'scrap_declarations',
     entityId: id,
-    oldValue: { storage_location: decl.storage_location },
-    newValue: { storage_location: storageLocation },
+    newValue: { items },
   });
 
   return getDeclarationById(id, user);
@@ -223,11 +227,14 @@ export async function approveDeclaration(id, user, ipAddress) {
   const now = new Date();
 
   const updateData = { status: newStatus };
-  if (decl.status === 'SUBMITTED') { updateData.zone_manager_id = user.id; updateData.zone_approved_at = now; }
-  if (decl.status === 'ZONE_APPROVED') { updateData.dept_head_id = user.id; updateData.dept_approved_at = now; }
+  if (decl.status === 'SUBMITTED') { updateData.dept_head_id = user.id; updateData.dept_approved_at = now; }
   if (decl.status === 'DEPT_APPROVED') { updateData.irep_auth_by = user.id; updateData.irep_authorized_at = now; }
-  if (decl.status === 'IREP_AUTHORIZED') { updateData.security_auth_by = user.id; updateData.security_authorized_at = now; }
-  if (decl.status === 'SECURITY_AUTHORIZED') { updateData.completed_at = now; }
+  // Security authorization is the final step — it completes the declaration.
+  if (decl.status === 'IREP_AUTHORIZED') {
+    updateData.security_auth_by = user.id;
+    updateData.security_authorized_at = now;
+    updateData.completed_at = now;
+  }
 
   const updated = await prisma.scrapDeclaration.update({ where: { id }, data: updateData });
 
@@ -327,7 +334,6 @@ export async function getDeclarationById(id, user) {
     where: { id },
     include: {
       employee: { select: { name: true, emp_no: true, zone: true, production_function: true } },
-      zone_manager: { select: { name: true, emp_no: true } },
       dept_head: { select: { name: true, emp_no: true } },
       irep_authorizer: { select: { name: true, emp_no: true } },
       security_authorizer: { select: { name: true, emp_no: true } },

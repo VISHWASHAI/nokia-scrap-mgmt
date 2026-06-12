@@ -9,7 +9,7 @@ import {
   deleteDeclaration,
   submitDeclaration,
   approveDeclaration,
-  updateStorageLocation,
+  updateStorageLocations,
   getDeclarations,
   getDeclarationById,
   generateReferenceNo,
@@ -41,7 +41,7 @@ router.get('/next-reference', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.get('/export/excel', requireMinRole('ZONE_MANAGER'), async (req, res, next) => {
+router.get('/export/excel', requireMinRole('DEPT_HEAD'), async (req, res, next) => {
   try {
     // If date range provided, scope to that range; otherwise export all historical data
     const dateFrom = req.query.date_from || null;
@@ -89,12 +89,12 @@ router.patch('/:id/submit', async (req, res, next) => {
 
 router.patch('/:id/storage-location', validate(updateStorageLocationSchema), async (req, res, next) => {
   try {
-    const updated = await updateStorageLocation(req.params.id, req.body.storage_location, req.user);
+    const updated = await updateStorageLocations(req.params.id, req.body.items, req.user);
     ok(res, updated);
   } catch (err) { next(err); }
 });
 
-router.patch('/:id/approve', requireMinRole('ZONE_MANAGER'), async (req, res, next) => {
+router.patch('/:id/approve', requireMinRole('DEPT_HEAD'), async (req, res, next) => {
   try {
     const updated = await approveDeclaration(req.params.id, req.user, req.ip);
     ok(res, updated);

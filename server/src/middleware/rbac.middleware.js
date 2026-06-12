@@ -2,12 +2,11 @@ import { AppError } from '../utils/AppError.js';
 
 const ROLE_RANK = {
   EMPLOYEE: 1,
-  ZONE_MANAGER: 2,
-  DEPT_HEAD: 3,
-  IREP: 4,
-  SECURITY: 5,
-  FACILITY_MANAGER: 6,
-  ADMIN: 7,
+  DEPT_HEAD: 2,
+  IREP: 3,
+  SECURITY: 4,
+  FACILITY_MANAGER: 5,
+  ADMIN: 6,
 };
 
 export function requireRole(...roles) {

@@ -25,7 +25,7 @@ router.get('/summary', async (req, res, next) => {
         where: { status: { notIn: ['DRAFT', 'COMPLETED'] } },
       }),
       prisma.scrapDeclaration.count({
-        where: { status: { in: ['SUBMITTED', 'ZONE_APPROVED', 'DEPT_APPROVED', 'IREP_AUTHORIZED', 'SECURITY_AUTHORIZED'] } },
+        where: { status: { in: ['SUBMITTED', 'DEPT_APPROVED', 'IREP_AUTHORIZED'] } },
       }),
     ]);
 

@@ -1,6 +1,5 @@
 export const ROLES = {
   EMPLOYEE: 'EMPLOYEE',
-  ZONE_MANAGER: 'ZONE_MANAGER',
   DEPT_HEAD: 'DEPT_HEAD',
   IREP: 'IREP',
   SECURITY: 'SECURITY',
@@ -10,7 +9,6 @@ export const ROLES = {
 
 export const ROLE_LABELS = {
   EMPLOYEE: 'Employee',
-  ZONE_MANAGER: 'Zone Manager',
   DEPT_HEAD: 'Dept Head',
   IREP: 'IREP Officer',
   SECURITY: 'Security Officer',
@@ -20,12 +18,11 @@ export const ROLE_LABELS = {
 
 export const ROLE_RANK = {
   EMPLOYEE: 1,
-  ZONE_MANAGER: 2,
-  DEPT_HEAD: 3,
-  IREP: 4,
-  SECURITY: 5,
-  FACILITY_MANAGER: 6,
-  ADMIN: 7,
+  DEPT_HEAD: 2,
+  IREP: 3,
+  SECURITY: 4,
+  FACILITY_MANAGER: 5,
+  ADMIN: 6,
 };
 
 export function hasMinRole(userRole, minRole) {

@@ -24,6 +24,23 @@ function buildDefaultRows(categories, waste_type) {
   return categories.map(cat => ({ waste_type, category: cat, pallet_qty: '', weight_kg: '', remarks: '' }));
 }
 
+// SOFT declarations are entered at the main-group level (one row per group);
+// BAT declarations use the full detailed category list.
+const GENERAL_GROUP_NAMES   = Object.keys(GENERAL_WASTE_SUBGROUPS);
+const HAZARDOUS_GROUP_NAMES = Object.keys(HAZARDOUS_SUBGROUPS);
+const EWASTE_GROUP_NAMES    = Object.keys(EWASTE_SUBGROUPS);
+
+function categoryListFor(source, waste_type) {
+  if (source === 'SOFT') {
+    return waste_type === 'GENERAL'   ? GENERAL_GROUP_NAMES
+         : waste_type === 'HAZARDOUS' ? HAZARDOUS_GROUP_NAMES
+         : EWASTE_GROUP_NAMES;
+  }
+  return waste_type === 'GENERAL'   ? GENERAL_WASTE_CATEGORIES
+       : waste_type === 'HAZARDOUS' ? HAZARDOUS_CATEGORIES
+       : EWASTE_CATEGORIES;
+}
+
 // Defined at module scope so React never remounts it on parent re-renders
 const PANEL_ACCENT = {
   general:   { bar: '#0050FF', light: '#EEF3FF', badge: 'bg-blue-100 text-blue-700',   icon: '♻️' },
@@ -276,21 +293,23 @@ export default function DeclarationForm() {
   const { id } = useParams(); // present when editing an existing draft
   const isEdit = Boolean(id);
 
+  const initialSource = sourceFromFunction(user?.production_function || 'SMT');
+
   const [header, setHeader] = useState({
     date: today(),
     shift: 'A',
     time: new Date().toTimeString().slice(0, 5),
     zone: user?.zone || '',
     production_function: user?.production_function || 'SMT',
-    source: sourceFromFunction(user?.production_function || 'SMT'),
+    source: initialSource,
     description: '',
     reference_no: '',
     disposal_route: '',
   });
 
-  const [generalRows, setGeneralRows] = useState(buildDefaultRows(GENERAL_WASTE_CATEGORIES, 'GENERAL'));
-  const [hazardousRows, setHazardousRows] = useState(buildDefaultRows(HAZARDOUS_CATEGORIES, 'HAZARDOUS'));
-  const [ewasteRows, setEwasteRows] = useState(buildDefaultRows(EWASTE_CATEGORIES, 'EWASTE'));
+  const [generalRows, setGeneralRows]     = useState(() => buildDefaultRows(categoryListFor(initialSource, 'GENERAL'), 'GENERAL'));
+  const [hazardousRows, setHazardousRows] = useState(() => buildDefaultRows(categoryListFor(initialSource, 'HAZARDOUS'), 'HAZARDOUS'));
+  const [ewasteRows, setEwasteRows]       = useState(() => buildDefaultRows(categoryListFor(initialSource, 'EWASTE'), 'EWASTE'));
 
   const [openPanels, setOpenPanels] = useState({ general: true, hazardous: false, ewaste: false });
   const [saving, setSaving] = useState(false);
@@ -333,9 +352,10 @@ export default function DeclarationForm() {
             };
           });
         }
-        setGeneralRows(mergeRows(GENERAL_WASTE_CATEGORIES, 'GENERAL'));
-        setHazardousRows(mergeRows(HAZARDOUS_CATEGORIES, 'HAZARDOUS'));
-        setEwasteRows(mergeRows(EWASTE_CATEGORIES, 'EWASTE'));
+        const src = decl.source || sourceFromFunction(decl.production_function);
+        setGeneralRows(mergeRows(categoryListFor(src, 'GENERAL'), 'GENERAL'));
+        setHazardousRows(mergeRows(categoryListFor(src, 'HAZARDOUS'), 'HAZARDOUS'));
+        setEwasteRows(mergeRows(categoryListFor(src, 'EWASTE'), 'EWASTE'));
 
         // Auto-expand panels that have data
         const hasGeneral   = decl.line_items?.some(li => li.waste_type === 'GENERAL'   && Number(li.weight_kg) > 0);
@@ -354,6 +374,14 @@ export default function DeclarationForm() {
       .then(({ reference_no }) => setHeader(h => ({ ...h, reference_no })))
       .catch(() => {});
   }, [isEdit]);
+
+  // Rebuild the waste rows when the source toggles (BAT = full categories, SOFT = main groups).
+  useEffect(() => {
+    if (isEdit) return;
+    setGeneralRows(buildDefaultRows(categoryListFor(header.source, 'GENERAL'), 'GENERAL'));
+    setHazardousRows(buildDefaultRows(categoryListFor(header.source, 'HAZARDOUS'), 'HAZARDOUS'));
+    setEwasteRows(buildDefaultRows(categoryListFor(header.source, 'EWASTE'), 'EWASTE'));
+  }, [header.source, isEdit]);
 
   const togglePanel = (panel) => setOpenPanels(p => ({ ...p, [panel]: !p[panel] }));
 
@@ -501,19 +529,18 @@ export default function DeclarationForm() {
           rows={generalRows} setRows={setGeneralRows}
           title="General Waste" panel="general"
           isOpen={openPanels.general} onToggle={togglePanel}
-          subgroups={GENERAL_WASTE_SUBGROUPS}
+          subgroups={header.source === 'BAT' ? GENERAL_WASTE_SUBGROUPS : undefined}
         />
         <WasteTable
           rows={hazardousRows} setRows={setHazardousRows}
           title="Hazardous Waste" panel="hazardous"
           isOpen={openPanels.hazardous} onToggle={togglePanel}
-          subgroups={HAZARDOUS_SUBGROUPS}
         />
         <WasteTable
           rows={ewasteRows} setRows={setEwasteRows}
           title="E-Waste" panel="ewaste"
           isOpen={openPanels.ewaste} onToggle={togglePanel}
-          subgroups={EWASTE_SUBGROUPS}
+          subgroups={header.source === 'BAT' ? EWASTE_SUBGROUPS : undefined}
         />
 
         {/* Approval chain preview */}

@@ -11,7 +11,6 @@ datasource db {
 
 enum Role {
   EMPLOYEE
-  ZONE_MANAGER
   DEPT_HEAD
   IREP
   SECURITY
@@ -50,10 +49,8 @@ enum Shift {
 enum DeclarationStatus {
   DRAFT
   SUBMITTED
-  ZONE_APPROVED
   DEPT_APPROVED
   IREP_AUTHORIZED
-  SECURITY_AUTHORIZED
   COMPLETED
 }
 
@@ -112,11 +109,11 @@ model Employee {
   updated_at         DateTime           @updatedAt
 
   declarations_made       ScrapDeclaration[] @relation("DeclaredBy")
-  zone_approvals          ScrapDeclaration[] @relation("ZoneManager")
   dept_approvals          ScrapDeclaration[] @relation("DeptHead")
   irep_authorizations     ScrapDeclaration[] @relation("IrepAuth")
   security_authorizations ScrapDeclaration[] @relation("SecurityAuth")
   vendor_pickups          VendorPickup[]
+  disposal_invoices       DisposalInvoice[]
   audit_logs              AuditLog[]
 
   @@map("employees")
@@ -135,15 +132,12 @@ model ScrapDeclaration {
   description        String?            @db.Text
   reference_no       String?
   disposal_route     DisposalRoute      @default(CIRCULARITY)
-  storage_location   StorageLocation?
   status             DeclarationStatus  @default(DRAFT)
 
-  zone_manager_id    String?
   dept_head_id       String?
   irep_auth_by       String?
   security_auth_by   String?
 
-  zone_approved_at   DateTime?
   dept_approved_at   DateTime?
   irep_authorized_at DateTime?
   security_authorized_at DateTime?
@@ -153,7 +147,6 @@ model ScrapDeclaration {
   updated_at         DateTime           @updatedAt
 
   employee           Employee           @relation("DeclaredBy", fields: [employee_id], references: [id])
-  zone_manager       Employee?          @relation("ZoneManager", fields: [zone_manager_id], references: [id])
   dept_head          Employee?          @relation("DeptHead", fields: [dept_head_id], references: [id])
   irep_authorizer    Employee?          @relation("IrepAuth", fields: [irep_auth_by], references: [id])
   security_authorizer Employee?         @relation("SecurityAuth", fields: [security_auth_by], references: [id])
@@ -173,6 +166,7 @@ model DeclarationLineItem {
   pallet_qty     Decimal?  @db.Decimal(10, 3)
   weight_kg      Decimal?  @db.Decimal(10, 3)
   remarks        String?   @db.Text
+  storage_location StorageLocation?
 
   declaration    ScrapDeclaration @relation(fields: [declaration_id], references: [id], onDelete: Cascade)
 
@@ -230,6 +224,41 @@ model ExcelExportLog {
   declaration     ScrapDeclaration? @relation(fields: [declaration_id], references: [id])
 
   @@map("excel_export_log")
+}
+
+model DisposalInvoice {
+  id               String   @id @default(uuid())
+  invoice_no       String   @unique
+  invoice_date     DateTime @db.Date
+  vendor_name      String
+  vendor_gstin     String?
+  total_net_amount Decimal? @db.Decimal(14, 2)
+  total_tax        Decimal? @db.Decimal(14, 2)
+  total_amount     Decimal? @db.Decimal(14, 2)
+  source_file      String?
+  created_by       String
+
+  creator          Employee @relation(fields: [created_by], references: [id])
+  items            DisposalInvoiceItem[]
+  created_at       DateTime @default(now())
+
+  @@map("disposal_invoices")
+}
+
+model DisposalInvoiceItem {
+  id                  String   @id @default(uuid())
+  disposal_invoice_id String
+  material_description String
+  category            String
+  waste_type          WasteType
+  source              WasteSource
+  qty_kg              Decimal  @db.Decimal(12, 3)
+  unit_price          Decimal? @db.Decimal(12, 2)
+  ledger_entry_id     String?
+
+  invoice             DisposalInvoice @relation(fields: [disposal_invoice_id], references: [id], onDelete: Cascade)
+
+  @@map("disposal_invoice_items")
 }
 
 model AuditLog {

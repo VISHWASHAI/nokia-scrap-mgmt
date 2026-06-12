@@ -19,6 +19,7 @@ const ACTION_META = {
   DECLARATION_APPROVED:   { label: 'Approved declaration', color: 'teal' },
   STORAGE_LOCATION_UPDATED: { label: 'Updated storage location', color: 'purple' },
   VENDOR_PICKUP_CREATED:  { label: 'Logged vendor pickup', color: 'purple' },
+  DISPOSAL_INVOICE_RECORDED: { label: 'Recorded disposal invoice', color: 'teal' },
   EMPLOYEE_CREATED:       { label: 'Created employee',    color: 'blue'   },
   EMPLOYEE_UPDATED:       { label: 'Updated employee',    color: 'yellow' },
   EMPLOYEE_ACTIVATED:     { label: 'Activated employee',  color: 'green'  },
@@ -57,6 +58,9 @@ function logDetails(log) {
   if (log.action === 'DECLARATION_DELETED') return ov?.declaration_no || 'Draft deleted';
   if (log.action === 'VENDOR_PICKUP_CREATED') {
     return nv?.vendor_name ? `${nv.vendor_name}${nv.category ? ` · ${nv.category}` : ''}` : '—';
+  }
+  if (log.action === 'DISPOSAL_INVOICE_RECORDED') {
+    return nv?.invoice_no ? `${nv.invoice_no}${nv.vendor_name ? ` · ${nv.vendor_name}` : ''}${nv.items ? ` · ${nv.items} item(s)` : ''}` : '—';
   }
   if (log.action === 'EMPLOYEE_CREATED') return nv?.emp_no ? `${nv.emp_no} — ${nv.name}` : '—';
   if (log.action === 'EMPLOYEE_ACTIVATED' || log.action === 'EMPLOYEE_DEACTIVATED') {
