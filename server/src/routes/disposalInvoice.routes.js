@@ -38,11 +38,11 @@ router.post('/', requireRole(...DISPOSAL_ROLES), validate(createDisposalInvoiceS
   } catch (err) { next(err); }
 });
 
-// Live stock lookup for a category on a date — used by the review preview.
+// Live stock lookup for a category — current stock on hand. Used by the review preview.
 router.get('/stock', requireRole(...DISPOSAL_ROLES), async (req, res, next) => {
   try {
     if (!req.query.category) throw new AppError('category is required', 422, 'NO_CATEGORY');
-    const stock = await getStockFor(req.query.category, req.query.date);
+    const stock = await getStockFor(req.query.category);
     ok(res, stock);
   } catch (err) { next(err); }
 });

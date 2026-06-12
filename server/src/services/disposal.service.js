@@ -26,60 +26,42 @@ async function pickSource(client, category, waste_type) {
 }
 
 /**
- * Stock position for a category on a specific date, on its target source:
- *   opening   = closing balance carried into that date
- *   waste     = generation already recorded on that date
- *   available = opening + waste − disposal already booked that date  (max disposable)
+ * Current available stock for a category = the closing balance of the most
+ * recent ledger entry, on the source (BAT/SOFT) holding the most stock.
+ * This is what is physically on hand now (all generation minus all disposals),
+ * regardless of the invoice date. Returns { source, available }.
  */
-async function getStockForDate(client, category, waste_type, date) {
+async function getAvailableStock(client, category, waste_type) {
   const source = await pickSource(client, category, waste_type);
-  const rows = await client.generationDisposalLedger.findMany({
+  const latest = await client.generationDisposalLedger.findFirst({
     where: { category, waste_type, source },
-    orderBy: [{ date: 'asc' }, { created_at: 'asc' }],
+    orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
   });
-  const target = new Date(date);
-  const dayRow = rows.find(r => isoDay(r.date) === isoDay(target));
-
-  let opening, waste, priorDisposal;
-  if (dayRow) {
-    opening = Number(dayRow.opening_stock);
-    waste = Number(dayRow.waste_for_day);
-    priorDisposal = Number(dayRow.disposal);
-  } else {
-    const before = [...rows].reverse().find(r => new Date(r.date) < target);
-    opening = before ? Number(before.closing_stock) : 0;
-    waste = 0;
-    priorDisposal = 0;
-  }
-  const available = opening + waste - priorDisposal;
-  return { source, opening, waste, available };
+  return { source, available: latest ? Number(latest.closing_stock) : 0 };
 }
 
-/** Public: current available stock for a category on a date — used for live preview lookups. */
-export async function getStockFor(category, date) {
+/** Public: current available stock for a category — used for live preview lookups. */
+export async function getStockFor(category) {
   const waste_type = wasteTypeForCategory(category);
-  if (!waste_type) return { available: null, opening: null, waste: null, source: null, waste_type: null };
-  const stock = await getStockForDate(prisma, category, waste_type, date || isoDay(new Date()));
+  if (!waste_type) return { available: null, source: null, waste_type: null };
+  const stock = await getAvailableStock(prisma, category, waste_type);
   return { ...stock, waste_type };
 }
 
-/** Parse a PDF buffer, attach a best-guess category and date-aware available stock to each item. */
+/** Parse a PDF buffer, attach a best-guess category and current available stock to each item. */
 export async function parseInvoiceBuffer(buffer) {
   const { header, items } = await parseDisposalInvoice(buffer);
-  const date = header.invoice_date || isoDay(new Date());
   const enriched = await Promise.all(items.map(async it => {
     const m = matchCategory(it.material_description);
     const stock = m.category
-      ? await getStockForDate(prisma, m.category, m.waste_type, date)
-      : { source: null, opening: null, waste: null, available: null };
+      ? await getAvailableStock(prisma, m.category, m.waste_type)
+      : { source: null, available: null };
     return {
       ...it,
       category: m.category,
       waste_type: m.waste_type,
       match_confidence: m.confidence,
       available_stock: stock.available,
-      opening_stock: stock.opening,
-      waste_for_day: stock.waste,
       stock_source: stock.source,
     };
   }));
@@ -167,21 +149,18 @@ export async function createDisposalInvoice(payload, user) {
     );
   }
 
-  // Stock guard (hard block): a disposal can never exceed the available stock for
-  // that day — max = opening stock + waste of the day (less any disposal already booked).
+  // Stock guard (hard block): a disposal can never exceed the current stock on hand.
   const fmt = (n) => Number(Number(n).toFixed(3));
   const byCat = new Map();
   for (const it of payload.items) byCat.set(it.category, (byCat.get(it.category) || 0) + it.qty_kg);
   const shortfalls = [];
   for (const [category, qty] of byCat) {
-    const { opening, waste, available } = await getStockForDate(
-      prisma, category, wasteTypeForCategory(category), payload.invoice_date,
-    );
-    if (qty > available) shortfalls.push({ category, qty, opening, waste, available });
+    const { available } = await getAvailableStock(prisma, category, wasteTypeForCategory(category));
+    if (qty > available) shortfalls.push({ category, qty, available });
   }
   if (shortfalls.length) {
     const detail = shortfalls
-      .map(s => `${s.category}: tried ${fmt(s.qty)} kg but max is ${fmt(s.available)} kg (opening ${fmt(s.opening)} + waste ${fmt(s.waste)})`)
+      .map(s => `${s.category}: tried ${fmt(s.qty)} kg but only ${fmt(s.available)} kg in stock`)
       .join('; ');
     throw new AppError(`Disposal not possible — exceeds available stock. ${detail}`, 422, 'INSUFFICIENT_STOCK');
   }
