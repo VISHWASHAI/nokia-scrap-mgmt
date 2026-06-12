@@ -147,6 +147,11 @@ export default function DisposalLog() {
         {draft && (
           <div className="card">
             <h2 className="font-semibold text-gray-900 mb-4">Review &amp; Confirm</h2>
+            {draft.header.ocr && (
+              <div className="text-amber-800 text-sm mb-3 bg-amber-50 border border-amber-300 rounded p-3">
+                📸 This was a scanned PDF read via OCR — please double-check every field (especially the date and quantities) before confirming.
+              </div>
+            )}
             {saveError && (
               <div className="text-red-700 text-sm mb-3 bg-red-50 border border-red-300 rounded p-3">
                 <p className="font-semibold mb-0.5">⚠ Disposal not possible</p>
