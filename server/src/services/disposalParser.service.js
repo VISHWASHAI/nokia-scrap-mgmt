@@ -1,5 +1,13 @@
-import { PDFParse } from 'pdf-parse';
 import { AppError } from '../utils/AppError.js';
+
+// pdf-parse pulls in pdfjs-dist, which touches browser globals (DOMMatrix) at
+// import time. Load it lazily so the rest of the server can start even if that
+// fails — only the disposal-parse endpoint depends on it.
+let PDFParsePromise;
+function loadPdfParse() {
+  if (!PDFParsePromise) PDFParsePromise = import('pdf-parse').then(m => m.PDFParse);
+  return PDFParsePromise;
+}
 
 // Convert DD.MM.YYYY → YYYY-MM-DD
 function toISODate(ddmmyyyy) {
@@ -55,6 +63,7 @@ function parseLineItems(lines) {
 export async function parseDisposalInvoice(buffer) {
   let text;
   try {
+    const PDFParse = await loadPdfParse();
     const parser = new PDFParse({ data: new Uint8Array(buffer) });
     const res = await parser.getText();
     text = res.text;
