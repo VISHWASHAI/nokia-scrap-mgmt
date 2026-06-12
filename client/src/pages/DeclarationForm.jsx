@@ -7,7 +7,6 @@ import {
   GENERAL_WASTE_CATEGORIES,
   GENERAL_WASTE_SUBGROUPS,
   NESTED_SUBGROUPS,
-  HAZARDOUS_SUBGROUPS,
   EWASTE_SUBGROUPS,
   HAZARDOUS_CATEGORIES,
   EWASTE_CATEGORIES,
@@ -24,17 +23,22 @@ function buildDefaultRows(categories, waste_type) {
   return categories.map(cat => ({ waste_type, category: cat, pallet_qty: '', weight_kg: '', remarks: '' }));
 }
 
-// BAT declarations are entered at the main-group level (one row per group);
+// BAT declarations use a short, fixed set of high-level categories;
 // SOFT declarations use the full detailed category list.
-const GENERAL_GROUP_NAMES   = Object.keys(GENERAL_WASTE_SUBGROUPS);
-const HAZARDOUS_GROUP_NAMES = Object.keys(HAZARDOUS_SUBGROUPS);
-const EWASTE_GROUP_NAMES    = Object.keys(EWASTE_SUBGROUPS);
+const BAT_GENERAL_CATEGORIES = [
+  'Casting/Mechanics',
+  'Metal Waste',
+  'Packaging waste (Carton, wooden, Plastic etc.)',
+  'Mixed waste (Machine dropout, Sweeping waste, etc.)',
+];
+const BAT_HAZARDOUS_CATEGORIES = ['Hazardous Waste'];
+const BAT_EWASTE_CATEGORIES    = ['E-waste'];
 
 function categoryListFor(source, waste_type) {
   if (source === 'BAT') {
-    return waste_type === 'GENERAL'   ? GENERAL_GROUP_NAMES
-         : waste_type === 'HAZARDOUS' ? HAZARDOUS_GROUP_NAMES
-         : EWASTE_GROUP_NAMES;
+    return waste_type === 'GENERAL'   ? BAT_GENERAL_CATEGORIES
+         : waste_type === 'HAZARDOUS' ? BAT_HAZARDOUS_CATEGORIES
+         : BAT_EWASTE_CATEGORIES;
   }
   return waste_type === 'GENERAL'   ? GENERAL_WASTE_CATEGORIES
        : waste_type === 'HAZARDOUS' ? HAZARDOUS_CATEGORIES
