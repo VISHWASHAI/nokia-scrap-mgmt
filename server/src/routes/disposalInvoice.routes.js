@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { requireRole } from '../middleware/rbac.middleware.js';
 import { createDisposalInvoiceSchema } from '../schemas/disposalInvoice.schema.js';
-import { parseInvoiceBuffer, createDisposalInvoice, getDisposalInvoices, DISPOSAL_ROLES } from '../services/disposal.service.js';
+import { parseInvoiceBuffer, createDisposalInvoice, getDisposalInvoices, getStockFor, DISPOSAL_ROLES } from '../services/disposal.service.js';
 import { AppError } from '../utils/AppError.js';
 import { ok } from '../utils/response.js';
 
@@ -35,6 +35,15 @@ router.post('/', requireRole(...DISPOSAL_ROLES), validate(createDisposalInvoiceS
   try {
     const invoice = await createDisposalInvoice(req.body, req.user);
     ok(res, invoice, 201);
+  } catch (err) { next(err); }
+});
+
+// Live stock lookup for a category on a date — used by the review preview.
+router.get('/stock', requireRole(...DISPOSAL_ROLES), async (req, res, next) => {
+  try {
+    if (!req.query.category) throw new AppError('category is required', 422, 'NO_CATEGORY');
+    const stock = await getStockFor(req.query.category, req.query.date);
+    ok(res, stock);
   } catch (err) { next(err); }
 });
 

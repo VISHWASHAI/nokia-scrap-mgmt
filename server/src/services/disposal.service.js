@@ -55,6 +55,14 @@ async function getStockForDate(client, category, waste_type, date) {
   return { source, opening, waste, available };
 }
 
+/** Public: current available stock for a category on a date — used for live preview lookups. */
+export async function getStockFor(category, date) {
+  const waste_type = wasteTypeForCategory(category);
+  if (!waste_type) return { available: null, opening: null, waste: null, source: null, waste_type: null };
+  const stock = await getStockForDate(prisma, category, waste_type, date || isoDay(new Date()));
+  return { ...stock, waste_type };
+}
+
 /** Parse a PDF buffer, attach a best-guess category and date-aware available stock to each item. */
 export async function parseInvoiceBuffer(buffer) {
   const { header, items } = await parseDisposalInvoice(buffer);

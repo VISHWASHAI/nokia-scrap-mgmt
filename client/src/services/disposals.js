@@ -15,3 +15,7 @@ export const createDisposalInvoice = (body) =>
 
 export const getDisposalInvoices = (params) =>
   api.get('/disposal-invoices', { params }).then(r => r.data.data);
+
+// Live stock lookup for a category on a given date.
+export const getDisposalStock = (category, date) =>
+  api.get('/disposal-invoices/stock', { params: { category, date } }).then(r => r.data.data);

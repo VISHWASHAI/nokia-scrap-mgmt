@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
-import { parseDisposalInvoice, createDisposalInvoice, getDisposalInvoices } from '../services/disposals.js';
+import { parseDisposalInvoice, createDisposalInvoice, getDisposalInvoices, getDisposalStock } from '../services/disposals.js';
 import { ALL_CATEGORIES } from '../constants/wasteCategories.js';
 import { formatDate, formatDateTime } from '../utils/dateHelpers.js';
 import { fmtKg } from '../utils/formatters.js';
@@ -47,15 +47,46 @@ export default function DisposalLog() {
     }
   }
 
-  function setItem(idx, key, value) {
+  function setItemFields(idx, fields) {
     setDraft(d => {
       const items = [...d.items];
-      items[idx] = { ...items[idx], [key]: value };
+      items[idx] = { ...items[idx], ...fields };
       return { ...d, items };
     });
   }
+  function setItem(idx, key, value) {
+    setItemFields(idx, { [key]: value });
+  }
   function setHeader(key, value) {
     setDraft(d => ({ ...d, header: { ...d.header, [key]: value } }));
+  }
+
+  // Re-fetch the live available stock for a row whenever its category or the invoice date changes.
+  async function refreshStock(idx, category, date) {
+    if (!category || !date) {
+      setItemFields(idx, { available_stock: null, opening_stock: null, waste_for_day: null, _stockLoading: false });
+      return;
+    }
+    setItemFields(idx, { _stockLoading: true });
+    try {
+      const s = await getDisposalStock(category, date);
+      setItemFields(idx, {
+        available_stock: s.available, opening_stock: s.opening, waste_for_day: s.waste,
+        waste_type: s.waste_type ?? undefined, stock_source: s.source, _stockLoading: false,
+      });
+    } catch {
+      setItemFields(idx, { _stockLoading: false });
+    }
+  }
+
+  function handleCategoryChange(idx, category) {
+    setItem(idx, 'category', category);
+    refreshStock(idx, category, draft.header.invoice_date);
+  }
+
+  function handleDateChange(date) {
+    setHeader('invoice_date', date);
+    draft.items.forEach((it, idx) => { if (it.category) refreshStock(idx, it.category, date); });
   }
 
   async function handleSave() {
@@ -125,7 +156,7 @@ export default function DisposalLog() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
               <div><label className="form-label">Invoice No.</label><input className="form-input" value={draft.header.invoice_no || ''} onChange={e => setHeader('invoice_no', e.target.value)} /></div>
-              <div><label className="form-label">Invoice Date</label><input type="date" className="form-input" value={draft.header.invoice_date || ''} onChange={e => setHeader('invoice_date', e.target.value)} /></div>
+              <div><label className="form-label">Invoice Date</label><input type="date" className="form-input" value={draft.header.invoice_date || ''} onChange={e => handleDateChange(e.target.value)} /></div>
               <div><label className="form-label">Vendor</label><input className="form-input" value={draft.header.vendor_name || ''} onChange={e => setHeader('vendor_name', e.target.value)} /></div>
               <div><label className="form-label">GSTIN</label><input className="form-input" value={draft.header.vendor_gstin || ''} onChange={e => setHeader('vendor_gstin', e.target.value)} /></div>
             </div>
@@ -150,7 +181,7 @@ export default function DisposalLog() {
                           <select
                             className={`form-select text-xs py-1 ${!it.category ? 'border-red-300 text-red-600' : ''}`}
                             value={it.category || ''}
-                            onChange={e => setItem(i, 'category', e.target.value || null)}
+                            onChange={e => handleCategoryChange(i, e.target.value || null)}
                           >
                             <option value="">— select —</option>
                             {ALL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -163,7 +194,9 @@ export default function DisposalLog() {
                           <input type="number" step="0.001" className={`form-input text-xs py-1 w-28 ${short ? 'border-amber-400 text-amber-700' : ''}`} value={it.qty_kg} onChange={e => setItem(i, 'qty_kg', e.target.value)} />
                         </td>
                         <td className="table-cell">
-                          {it.available_stock == null ? (
+                          {it._stockLoading ? (
+                            <span className="text-gray-400 text-xs">checking…</span>
+                          ) : it.available_stock == null ? (
                             <span className="text-gray-400">—</span>
                           ) : (
                             <span className={short ? 'text-amber-700 font-semibold' : 'text-gray-600'}>
