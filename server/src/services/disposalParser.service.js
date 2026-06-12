@@ -1,4 +1,10 @@
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { AppError } from '../utils/AppError.js';
+
+// Bundled Tesseract language data lives at the server root, so OCR works
+// offline without downloading from a CDN at runtime.
+const SERVER_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // pdf-parse pulls in pdfjs-dist, which touches browser globals (DOMMatrix) at
 // import time. Load it (and tesseract) lazily so the rest of the server can
@@ -81,7 +87,11 @@ async function ocrPdf(buffer) {
     for (const page of shot.pages ?? []) {
       const b64 = (page.dataUrl || '').split(',')[1];
       if (!b64) continue;
-      const { data } = await Tesseract.recognize(Buffer.from(b64, 'base64'), 'eng');
+      const { data } = await Tesseract.recognize(Buffer.from(b64, 'base64'), 'eng', {
+        langPath: SERVER_ROOT,
+        gzip: false,
+        cacheMethod: 'none',
+      });
       text += data.text + '\n';
     }
   } finally {
