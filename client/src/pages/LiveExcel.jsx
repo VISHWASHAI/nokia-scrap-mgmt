@@ -173,10 +173,10 @@ export default function LiveExcel() {
           {/* Workbook sheet guide */}
           <div className="mt-4 border border-gray-100 rounded-lg divide-y divide-gray-100 text-sm">
             {[
-              { sheet: 'Summary',           desc: 'All-time totals by source and waste type, declaration counts' },
-              { sheet: 'General Scrap',     desc: 'Ledger rows for general waste — opening, waste, disposal, closing stock' },
-              { sheet: 'Hazardous & E-Scrap', desc: 'Ledger rows for hazardous and e-waste categories' },
-              { sheet: 'Declarations Log',  desc: 'All declarations with employee, zone, status, weight, and timestamps' },
+              { sheet: 'Summary',          desc: 'All-time totals by source and waste type, declaration counts' },
+              { sheet: 'SOFT General/Hazardous/E-Waste', desc: 'SOFT production ledger (detailed categories) — opening, waste, disposal, closing stock' },
+              { sheet: 'BAT General/Hazardous/E-Waste',  desc: 'BAT production ledger (high-level categories) on its own sheets' },
+              { sheet: 'Declarations Log', desc: 'All declarations with employee, zone, status, weight, and timestamps' },
             ].map(s => (
               <div key={s.sheet} className="flex items-start gap-3 px-4 py-2.5">
                 <span className="bg-[#0050FF] text-white text-xs font-semibold px-2 py-0.5 rounded mt-0.5 flex-shrink-0">{s.sheet}</span>

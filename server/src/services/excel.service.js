@@ -37,6 +37,17 @@ const EWASTE_CATEGORIES = [
   'CPU', 'Desktop', 'Server', 'Others',
 ];
 
+// BAT production uses a short, fixed high-level category set (must match
+// client/src/pages/DeclarationForm.jsx). SOFT uses the detailed lists above.
+const BAT_GENERAL_CATEGORIES = [
+  'Casting/Mechanics',
+  'Metal Waste',
+  'Packaging waste (Carton, wooden, Plastic etc.)',
+  'Mixed waste (Machine dropout, Sweeping waste, etc.)',
+];
+const BAT_HAZARDOUS_CATEGORIES = ['Hazardous Waste'];
+const BAT_EWASTE_CATEGORIES    = ['E-waste'];
+
 // ── Colour palette ────────────────────────────────────────────────────────────
 const NOKIA_BLUE  = 'FF0050FF';
 const NOKIA_DARK  = 'FF0A0A14';
@@ -48,6 +59,12 @@ const ALT_ROW_FILL = 'FFF5F7FF';
 
 // ── Pivot sheet builder ───────────────────────────────────────────────────────
 function addPivotSheet(wb, title, ledgerRows, orderedCategories) {
+  // Include any categories present in the data but not in the predefined order,
+  // so nothing is silently dropped (e.g. legacy category names).
+  const present = new Set(ledgerRows.map(r => r.category));
+  const extras = [...present].filter(c => !orderedCategories.includes(c)).sort();
+  orderedCategories = [...orderedCategories, ...extras];
+
   // Step 1: aggregate waste+disposal per (date, category) across all sources
   const agg = new Map(); // 'YYYY-MM-DD' → Map(category → {waste, disposal})
 
@@ -320,11 +337,20 @@ export async function generateReport(dateFrom, dateTo) {
 
   const generatedAt = dayjs().format('DD-MM-YYYY HH:mm:ss');
 
-  // Sheet order
+  // Sheet order — BAT and SOFT production are kept on separate sheets because
+  // they use different category sets.
   addSummarySheet(wb, ledger, declarations, generatedAt);
-  addPivotSheet(wb, 'General Waste',    ledger.filter(l => l.waste_type === 'GENERAL'),   GENERAL_CATEGORIES);
-  addPivotSheet(wb, 'Hazardous Waste',  ledger.filter(l => l.waste_type === 'HAZARDOUS'), HAZARDOUS_CATEGORIES);
-  addPivotSheet(wb, 'E-Waste',          ledger.filter(l => l.waste_type === 'EWASTE'),    EWASTE_CATEGORIES);
+
+  const forSrc = (src, wt) => ledger.filter(l => l.source === src && l.waste_type === wt);
+
+  addPivotSheet(wb, 'SOFT General',   forSrc('SOFT', 'GENERAL'),   GENERAL_CATEGORIES);
+  addPivotSheet(wb, 'SOFT Hazardous', forSrc('SOFT', 'HAZARDOUS'), HAZARDOUS_CATEGORIES);
+  addPivotSheet(wb, 'SOFT E-Waste',   forSrc('SOFT', 'EWASTE'),    EWASTE_CATEGORIES);
+
+  addPivotSheet(wb, 'BAT General',    forSrc('BAT', 'GENERAL'),    BAT_GENERAL_CATEGORIES);
+  addPivotSheet(wb, 'BAT Hazardous',  forSrc('BAT', 'HAZARDOUS'),  BAT_HAZARDOUS_CATEGORIES);
+  addPivotSheet(wb, 'BAT E-Waste',    forSrc('BAT', 'EWASTE'),     BAT_EWASTE_CATEGORIES);
+
   addDeclarationsSheet(wb, declarations);
 
   const buffer = await wb.xlsx.writeBuffer();
