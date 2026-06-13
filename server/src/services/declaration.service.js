@@ -264,15 +264,17 @@ async function createLedgerEntries(decl) {
   for (const li of decl.line_items) {
     if (!li.weight_kg || Number(li.weight_kg) <= 0) continue;
 
-    // Find previous closing stock for this category+waste_type+source
+    // Carry forward from the most recent existing entry — including an earlier
+    // entry on the SAME day, so multiple declarations of the same material on
+    // one day accumulate instead of each opening from zero.
     const prev = await prisma.generationDisposalLedger.findFirst({
       where: {
         category: li.category,
         waste_type: li.waste_type,
         source: decl.source,
-        date: { lt: date },
+        date: { lte: date },
       },
-      orderBy: { date: 'desc' },
+      orderBy: [{ date: 'desc' }, { created_at: 'desc' }],
     });
 
     const opening = prev ? Number(prev.closing_stock) : 0;
