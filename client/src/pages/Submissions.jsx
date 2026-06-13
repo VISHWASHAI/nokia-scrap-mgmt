@@ -49,7 +49,7 @@ export default function Submissions() {
               ))}
             </select>
           </div>
-          <button onClick={() => applyFilters({ date_from: weekAgo(), date_to: today(), status: '' })} className="btn-secondary text-xs">Reset</button>
+          <button onClick={() => applyFilters({ date_from: '', date_to: '', status: '' })} className="btn-secondary text-xs">Reset</button>
         </div>
 
         {error && <ErrorAlert message={error} onRetry={refetch} />}
