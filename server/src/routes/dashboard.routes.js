@@ -9,8 +9,10 @@ router.use(authenticate);
 
 router.get('/summary', async (req, res, next) => {
   try {
-    const today = dayjs().startOf('day').toDate();
-    const weekStart = dayjs().subtract(6, 'day').startOf('day').toDate();
+    // Use UTC-midnight date boundaries to match how @db.Date values are stored
+    // and how the ledger/charts filter — avoids a timezone off-by-one day.
+    const today = new Date(dayjs().format('YYYY-MM-DD'));
+    const weekStart = new Date(dayjs().subtract(6, 'day').format('YYYY-MM-DD'));
 
     const [todayLedger, weekLedger, pendingCount, activeCount] = await Promise.all([
       prisma.generationDisposalLedger.aggregate({
