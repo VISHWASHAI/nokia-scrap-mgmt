@@ -3,10 +3,13 @@ import Layout from '../components/Layout.jsx';
 import DeclarationTable from '../components/DeclarationTable.jsx';
 import Pagination from '../components/Pagination.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
+import LedgerEditor from '../components/LedgerEditor.jsx';
 import { useDeclarations } from '../hooks/useDeclarations.js';
+import { useAuth } from '../hooks/useAuth.jsx';
 import { today, weekAgo } from '../utils/dateHelpers.js';
 
 export default function Submissions() {
+  const { user } = useAuth();
   const [filters, setFilters] = useState({ date_from: weekAgo(), date_to: today(), status: '', page: 1, limit: 20 });
   const { data, loading, error, refetch, setParams } = useDeclarations(filters);
 
@@ -56,6 +59,8 @@ export default function Submissions() {
 
         <DeclarationTable items={data?.items} loading={loading} emptyText="No submissions found for the selected filters." />
         <Pagination page={data?.page || 1} pages={data?.pages || 1} onPage={onPage} />
+
+        {user?.role === 'ADMIN' && <LedgerEditor />}
       </div>
     </Layout>
   );
