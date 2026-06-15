@@ -13,6 +13,27 @@ import {
 } from '../constants/wasteCategories.js';
 import { today } from '../utils/dateHelpers.js';
 import { PRODUCTION_FUNCTION_GROUPS, PRODUCTION_FUNCTION_LABELS } from '../constants/productionFunctions.js';
+import * as XLSX from 'xlsx';
+import { matchToCategories } from '../utils/materialMatch.js';
+
+// Pull material/weight/pallets/remarks out of a parsed sheet (header-driven, with fallback to column order).
+function extractImportRows(json) {
+  if (!json.length) return [];
+  const keys = Object.keys(json[0]);
+  const find = (...subs) => keys.find(k => subs.some(s => k.toLowerCase().includes(s)));
+  const matKey = find('material', 'category', 'description', 'item');
+  const wKey   = find('weight', 'qty', 'quantity', 'kg');
+  const pKey   = find('pallet');
+  const rKey   = find('remark', 'note');
+  return json
+    .map(r => ({
+      material: matKey ? r[matKey] : r[keys[0]],
+      weight:   wKey ? r[wKey] : r[keys[1]],
+      pallets:  pKey ? r[pKey] : null,
+      remarks:  rKey ? r[rKey] : null,
+    }))
+    .filter(r => r.material && r.weight != null && r.weight !== '' && Number(r.weight) > 0);
+}
 
 function sourceFromFunction(fn) {
   return ['SMT', 'MFT'].includes(fn) ? 'BAT' : 'SOFT';
@@ -318,6 +339,55 @@ export default function DeclarationForm() {
   const [submitting, setSubmitting] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState(isEdit);
   const [error, setError] = useState('');
+  const [importSummary, setImportSummary] = useState(null);
+
+  // Read an Excel/CSV of materials + weights and fill the matching line-item rows.
+  async function handleImportExcel(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(''); setImportSummary(null);
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: null });
+      const rows = extractImportRows(json);
+      if (!rows.length) { setError('No material rows found in the file. Expecting columns like Material and Weight.'); return; }
+
+      // Match each imported material against the categories currently in the form.
+      const buckets = { GENERAL: generalRows, HAZARDOUS: hazardousRows, EWASTE: ewasteRows };
+      const allCats = [];
+      for (const [wt, arr] of Object.entries(buckets))
+        arr.forEach((r, i) => allCats.push({ category: r.category, wt, i }));
+
+      const updates = { GENERAL: {}, HAZARDOUS: {}, EWASTE: {} };
+      const filled = [], unmatched = [];
+      for (const row of rows) {
+        const m = matchToCategories(String(row.material), allCats.map(c => c.category));
+        if (!m) { unmatched.push(String(row.material)); continue; }
+        const target = allCats.find(c => c.category === m.category);
+        updates[target.wt][target.i] = {
+          weight_kg: String(row.weight),
+          pallet_qty: row.pallets != null && row.pallets !== '' ? String(row.pallets) : '',
+          remarks: row.remarks != null ? String(row.remarks) : '',
+        };
+        filled.push(`${row.material} → ${m.category}`);
+      }
+
+      const apply = (arr, key) => arr.map((r, i) => (updates[key][i] ? { ...r, ...updates[key][i] } : r));
+      setGeneralRows(prev => apply(prev, 'GENERAL'));
+      setHazardousRows(prev => apply(prev, 'HAZARDOUS'));
+      setEwasteRows(prev => apply(prev, 'EWASTE'));
+      setOpenPanels(p => ({
+        general:   p.general   || Object.keys(updates.GENERAL).length > 0,
+        hazardous: p.hazardous || Object.keys(updates.HAZARDOUS).length > 0,
+        ewaste:    p.ewaste    || Object.keys(updates.EWASTE).length > 0,
+      }));
+      setImportSummary({ filledCount: filled.length, unmatched });
+    } catch (err) {
+      setError('Could not read the Excel file. Make sure it is a valid .xlsx or .csv.');
+    } finally {
+      e.target.value = '';
+    }
+  }
 
   // Pre-fill form when editing an existing draft
   useEffect(() => {
@@ -514,6 +584,28 @@ export default function DeclarationForm() {
               <input type="text" className="form-input bg-gray-50" readOnly value={header.reference_no} />
             </div>
           </div>
+        </div>
+
+        {/* Import from Excel */}
+        <div className="card">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 className="font-semibold text-gray-900">Import from Excel</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Upload a sheet of materials &amp; weights to auto-fill the line items below. Columns like <span className="font-mono">Material</span> and <span className="font-mono">Weight</span> are detected automatically.</p>
+            </div>
+            <label className="btn-secondary text-sm cursor-pointer">
+              ⬆ Choose Excel / CSV
+              <input type="file" accept=".xlsx,.xls,.csv" onChange={handleImportExcel} className="hidden" />
+            </label>
+          </div>
+          {importSummary && (
+            <div className={`mt-3 text-sm rounded-lg p-3 border ${importSummary.unmatched.length ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-green-50 border-green-200 text-green-800'}`}>
+              <p className="font-semibold">Filled {importSummary.filledCount} material{importSummary.filledCount === 1 ? '' : 's'}.</p>
+              {importSummary.unmatched.length > 0 && (
+                <p className="mt-1">Couldn't match (add these manually): {importSummary.unmatched.join(', ')}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Line item tables */}
