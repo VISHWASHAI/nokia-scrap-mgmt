@@ -8,6 +8,7 @@ import Submissions from './pages/Submissions.jsx';
 import VendorLog from './pages/VendorLog.jsx';
 import DisposalLog from './pages/DisposalLog.jsx';
 import LiveExcel from './pages/LiveExcel.jsx';
+import LedgerImport from './pages/LedgerImport.jsx';
 import Admin from './pages/Admin.jsx';
 import { hasMinRole } from './constants/roles.js';
 
@@ -31,6 +32,7 @@ function AppRoutes() {
       <Route path="/vendor-log" element={<RequireAuth><VendorLog /></RequireAuth>} />
       <Route path="/disposal-log" element={<RequireAuth roles={['SECURITY', 'IREP', 'ADMIN']}><DisposalLog /></RequireAuth>} />
       <Route path="/live-excel" element={<RequireAuth minRole="FACILITY_MANAGER"><LiveExcel /></RequireAuth>} />
+      <Route path="/ledger-import" element={<RequireAuth minRole="ADMIN"><LedgerImport /></RequireAuth>} />
       <Route path="/admin" element={<RequireAuth minRole="ADMIN"><Admin /></RequireAuth>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
